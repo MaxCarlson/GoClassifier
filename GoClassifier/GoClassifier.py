@@ -17,8 +17,56 @@ sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
 BoardSize = 361
 
-fileName = 'goData10G.csv'
-#fileName = 'iris_training.csv'
+gdataSize = str(10)
+gtestSize = str(15)
+fileNameX = 'goData' + gdataSize + '.csv'
+fileNameY = 'goDataRes' + gdataSize + '.csv'
+fnameTestX = gtestSize + 'Test.csv'
+fnameTestY = gtestSize + 'TestRes.csv'
+
+from numpy import genfromtxt
+
+
+Xt = genfromtxt(fileNameX, delimiter=',')
+Yt = genfromtxt(fileNameY, delimiter=',')
+X = genfromtxt(fnameTestX, delimiter=',')
+Y = genfromtxt(fnameTestY, delimiter=',')
+
+hiddenSize = 1024
+
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(hiddenSize,  activation="relu", input_shape=(BoardSize,)), #BoardSize
+    tf.keras.layers.Dense(hiddenSize, activation="relu"),
+    tf.keras.layers.Dense(hiddenSize, activation="relu"),
+    tf.keras.layers.Dense(hiddenSize, activation="relu"),
+    tf.keras.layers.Dense(hiddenSize, activation="relu"),
+    tf.keras.layers.Dense(hiddenSize, activation="relu"),
+    tf.keras.layers.Dense(hiddenSize, activation="relu"),
+    tf.keras.layers.Dense(hiddenSize, activation="relu"),
+    #tf.keras.layers.Dropout(0.01),
+    tf.keras.layers.Dense(BoardSize) # One output probability for each board location ( Should probably include pass in future)
+])
+
+#optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.1)
+#optimizer = tf.train.AdagradOptimizer(learning_rate=0.0001)
+
+model.compile(optimizer=optimizer, loss='logcosh', metrics=['accuracy'])
+
+model.fit(X, Y,  epochs=200, batch_size=1000, verbose=2)
+#validation_data=(Xt, Yt),
+
+
+
+
+
+
+
+
+
+
+"""
 
 def parseCsv(line):
     defaults = [[0.]] * (BoardSize * 2)
@@ -33,7 +81,7 @@ def parseCsv(line):
 trainDataset = tf.data.TextLineDataset(fileName)
 trainDataset = trainDataset.map(parseCsv)
 #trainDataset = trainDataset.shuffle(bufferSize=1000)
-trainDataset = trainDataset.batch(2) # Change back to 32 when done debugging
+trainDataset = trainDataset.batch(361) # Change back to 32 when done debugging
 
 hiddenSize = 32
 
@@ -57,6 +105,9 @@ def grad(model, inputs, targets):
 # Revisit optimizer once working, this will likely be bad for this model
 optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
 
+model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+model.fit(x=train_X, y=train_y, epochs=200, batch_size=64, verbose=2)
+
 epochCount = 200
 trainingLoss = []
 traingingAcc = []
@@ -72,13 +123,12 @@ for epoch in range(epochCount):
             grads = grad(model, X, y)
             optimizer.apply_gradients(zip(grads, model.variables), 
                                         global_step=tf.train.get_or_create_global_step())
-
-        
+     
             # Record current loss
             epochLossAvg(loss(model, X, y))
 
             # Compare prediction to actual
-            epochAcc(tf.argmax(model(X), axis=1, output_type=tf.int32), tf.cast(y, tf.int32))
+            epochAcc(tf.argmax(model(X), axis=1, output_type=tf.int32), y)
 
     trainingLoss.append(epochLossAvg.result())
     traingingAcc.append(epochAcc.result())
@@ -87,3 +137,4 @@ for epoch in range(epochCount):
         print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
                                                                 epochLossAvg.result(),
                                                                 epochAcc.result()))
+"""
