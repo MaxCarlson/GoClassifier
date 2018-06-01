@@ -13,6 +13,8 @@ tf.enable_eager_execution()
 sess = tf.Session()
 K.set_session(sess)
 
+sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+
 BoardSize = 361
 
 fileName = 'goData10G.csv'
@@ -21,25 +23,17 @@ fileName = 'goData10G.csv'
 def parseCsv(line):
     defaults = [[0.]] * (BoardSize * 2)
     parsedLine = tf.decode_csv(line, defaults)
-    # First item is real result move, everything else on line is a member of the board
-    label = tf.reshape(tf.cast(parsedLine[0:361], tf.int32), [361]) 
-
-    features = tf.reshape(parsedLine[361:722], [361])
-
-    #example_defaults = [[0.], [0.], [0.], [0.], [0]]  # sets field types
-    #parsed_line = tf.decode_csv(line, example_defaults)
-    # First 4 fields are features, combine into single tensor
-    #features = tf.reshape(parsed_line[:-1], shape=(4,))
-    # Last field is the label
-    #label = tf.reshape(parsed_line[-1], shape=())
+    # First BoardSize(^2) numbers are the padded label
+    label = tf.reshape(tf.cast(parsedLine[0:BoardSize], tf.int32), [BoardSize]) 
+    # Next are the pieces on the board (-1 for opponent, 0 empty, 1 us)
+    features = tf.reshape(parsedLine[BoardSize:BoardSize*2], [BoardSize])
 
     return features, label
 
 trainDataset = tf.data.TextLineDataset(fileName)
-#trainDataset = trainDataset.skip(1)
 trainDataset = trainDataset.map(parseCsv)
 #trainDataset = trainDataset.shuffle(bufferSize=1000)
-trainDataset = trainDataset.batch(1) # Change back to 32 when done debugging
+trainDataset = trainDataset.batch(2) # Change back to 32 when done debugging
 
 hiddenSize = 32
 
@@ -67,28 +61,29 @@ epochCount = 200
 trainingLoss = []
 traingingAcc = []
 
+
 for epoch in range(epochCount):
     epochLossAvg = tfe.metrics.Mean()
     epochAcc = tfe.metrics.Accuracy()
 
     # Training loop - using batchSize batches
-    # Why on Earth does this print X out?
-    for X, y in trainDataset:
-        grads = grad(model, X, y)
-        optimizer.apply_gradients(zip(grads, model.variables), 
-                                  global_step=tf.train.get_or_create_global_step())
+    with tf.device('/gpu:0'):
+        for X, y in trainDataset:
+            grads = grad(model, X, y)
+            optimizer.apply_gradients(zip(grads, model.variables), 
+                                        global_step=tf.train.get_or_create_global_step())
 
         
-        # Record current loss
-        epochLossAvg(loss(model, X, y))
+            # Record current loss
+            epochLossAvg(loss(model, X, y))
 
-        # Compare prediction to actual
-        epochAcc(tf.argmax(model(X), axis=1, output_type=tf.int32), tf.cast(y, tf.int32))
+            # Compare prediction to actual
+            epochAcc(tf.argmax(model(X), axis=1, output_type=tf.int32), tf.cast(y, tf.int32))
 
     trainingLoss.append(epochLossAvg.result())
     traingingAcc.append(epochAcc.result())
 
     if(epoch % 2 == 0):
-       print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
+        print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
                                                                 epochLossAvg.result(),
                                                                 epochAcc.result()))
