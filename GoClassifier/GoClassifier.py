@@ -6,10 +6,8 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 
+import numpy as np
 from keras import backend as K
-#K.set_image_dim_ordering('tf')
-
-#tf.enable_eager_execution()
 
 sess = tf.Session()
 K.set_session(sess)
@@ -21,26 +19,15 @@ BoardSize = BoardLength ** 2
 
 gdataSize = str(70)
 testDataSz = str(15)
-fileNameX = 'goData' + gdataSize + '.csv'
-fileNameY = 'goDataRes' + gdataSize + '.csv'
-fileNameXt = 'test' + testDataSz + '.csv'
-fileNameYt = 'test' + testDataSz + 'Res.csv'
+fileNameXY = 'goData' + gdataSize + '.csv'
+fileNameXYt = 'testData' + testDataSz + '.csv'
 
 WeightPath = "Weights.h5"
 
-import numpy as np
-#X  = np.random.random_integers(0, 1, (1500, BoardSize))
-#Y  = np.random.random_integers(0, 1, (1500, BoardSize))
-
-from numpy import genfromtxt
-
-def reshapeX(X):
-    XX = np.reshape(X, (np.shape(X)[0], BoardLength, BoardLength))
-    XX = np.expand_dims(XX, axis=1)
-    return XX
 
 # Get our data in the proper format for the Conv2D
-def extractDatasets(XY):
+def extractDatasets(fileName):
+    XY = np.genfromtxt(fileName, delimiter=',')
     Y = XY[:,0]
     Y = tf.keras.utils.to_categorical(Y, BoardSize)
     X = XY[:,1:BoardSize+1]
@@ -48,16 +35,9 @@ def extractDatasets(XY):
     X = np.expand_dims(X, axis=1)
     return X, Y
 
-XY = genfromtxt("newFormat10.csv", delimiter=',')
-X, Y = extractDatasets(XY)
 
-#X = reshapeX(genfromtxt(fileNameX, delimiter=','))
-#Y = genfromtxt(fileNameY, delimiter=',')
-#Y = tf.keras.utils.to_categorical(Y, BoardSize)
-
-Xt = reshapeX(genfromtxt(fileNameXt, delimiter=','))
-Yt = genfromtxt(fileNameYt, delimiter=',')
-Yt = tf.keras.utils.to_categorical(Yt, BoardSize)
+X , Y  = extractDatasets(fileNameXY)
+Xt, Yt = extractDatasets(fileNameXYt)
 
 
 convSize = 64
@@ -66,11 +46,13 @@ numEpochs = 2000
 hiddenSize = 1024
 
 model = tf.keras.Sequential([
-    tf.keras.layers.Convolution2D(convSize, (3, 3),  activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), #padding="same",
+    tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
     tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu'),
     tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
     tf.keras.layers.Dropout(0.24),
     tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(hiddenSize, activation='relu'),
+    tf.keras.layers.Dropout(0.24),
     tf.keras.layers.Dense(hiddenSize, activation='relu'),
     tf.keras.layers.Dropout(0.24),
     tf.keras.layers.Dense(BoardSize, activation='softmax'),
@@ -87,9 +69,6 @@ model.fit(X, Y, validation_data=(Xt, Yt), epochs=numEpochs, batch_size=batchSize
 
 #
 #model.save_weights(WeightPath)
-
-
-
 
 
 model = tf.keras.Sequential([
