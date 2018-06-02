@@ -39,17 +39,31 @@ def reshapeX(X):
     XX = np.expand_dims(XX, axis=1)
     return XX
 
-X = reshapeX(genfromtxt(fileNameX, delimiter=','))
-Y = genfromtxt(fileNameY, delimiter=',')
-Y = tf.keras.utils.to_categorical(Y, BoardSize)
+# Get our data in the proper format for the Conv2D
+def extractDatasets(XY):
+    Y = XY[:,0]
+    Y = tf.keras.utils.to_categorical(Y, BoardSize)
+    X = XY[:,1:BoardSize+1]
+    X = np.reshape(X, (np.shape(X)[0], BoardLength, BoardLength))
+    X = np.expand_dims(X, axis=1)
+    return X, Y
+
+XY = genfromtxt("newFormat10.csv", delimiter=',')
+X, Y = extractDatasets(XY)
+
+#X = reshapeX(genfromtxt(fileNameX, delimiter=','))
+#Y = genfromtxt(fileNameY, delimiter=',')
+#Y = tf.keras.utils.to_categorical(Y, BoardSize)
 
 Xt = reshapeX(genfromtxt(fileNameXt, delimiter=','))
 Yt = genfromtxt(fileNameYt, delimiter=',')
 Yt = tf.keras.utils.to_categorical(Yt, BoardSize)
 
-hiddenSize = 1024
 
 convSize = 64
+batchSize = 2000
+numEpochs = 2000
+hiddenSize = 1024
 
 model = tf.keras.Sequential([
     tf.keras.layers.Convolution2D(convSize, (3, 3),  activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), #padding="same",
@@ -69,8 +83,9 @@ optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
 
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy']) # Look into using to_catagorical on outputs instead of generating huge arrays of data
 
-model.fit(X, Y, validation_data=(Xt, Yt), epochs=2000, batch_size=2000, verbose=2)
+model.fit(X, Y, validation_data=(Xt, Yt), epochs=numEpochs, batch_size=batchSize, verbose=2)
 
+#
 #model.save_weights(WeightPath)
 
 
