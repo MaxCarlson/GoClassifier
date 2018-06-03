@@ -29,7 +29,7 @@ pathForDataFiles = 'data'
 convSize = 32
 batchSize = 2000
 numEpochs = 2000
-hiddenSize = 1024
+hiddenSize = 512
 
 trainFiles = (1, 4)
 gen = Generator(BoardLength, pathForDataFiles, trainFiles, batchSize)

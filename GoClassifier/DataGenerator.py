@@ -40,12 +40,39 @@ class Generator:
             XX, YY = self.extractNpy(wholePath)
             X = np.zeros((self.batchSize, 1, self.length, self.length))
             Y = np.zeros((self.batchSize, self.size))
-            for b in range(self.batchSize):
 
-                roll = random.randint(0, np.shape(XX)[0]-1)
 
-                X[b] = XX[roll]
-                Y[b] = YY[roll]
+            # Roll for a random spot to start the batch range slice
+            m = np.shape(XX)[0] 
+            roll = random.randint(0, m - 1)
+
+            if roll + self.batchSize < m:
+                X = XX[roll:roll + self.batchSize]
+                Y = YY[roll:roll + self.batchSize]
+
+            # This shouldn't happen all that often,
+            # Should curate data to avoid it infact!
+            elif self.batchSize > m:
+                for b in range(self.batchSize):
+                    roll = random.randint(0, np.shape(XX)[0]-1)        
+                    X[b] = XX[roll]
+                    Y[b] = YY[roll]
+
+            else:
+                # If it's not a good fit, take the upper slice then the lower one
+                m1 = np.shape(XX[roll:m])[0]
+                m2 = self.batchSize - m1
+                X[0:m1] = XX[roll:m]
+                Y[0:m1] = YY[roll:m]
+                X[m1:self.batchSize] = XX[0:m2]
+                Y[m1:self.batchSize] = YY[0:m2]
+
+            #for b in range(self.batchSize):
+
+           #     roll = random.randint(0, np.shape(XX)[0]-1)
+            
+           #     X[b] = XX[roll]
+           #     Y[b] = YY[roll]
 
             yield X, Y
             i += 1
