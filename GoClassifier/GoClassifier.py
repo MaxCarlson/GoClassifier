@@ -26,20 +26,18 @@ BoardSize = BoardLength ** 2
 WeightPath = "Weights.h5"
 pathForDataFiles = 'data'
 
-
-convSize = 27
+convSize = 32
 batchSize = 2000
 numEpochs = 2000
 hiddenSize = 1024
 
-gen = Generator(BoardLength, pathForDataFiles, batchSize)
+trainFiles = (1, 4)
+gen = Generator(BoardLength, pathForDataFiles, trainFiles, batchSize)
+valFiles = (11, 12)
+valGen = Generator(BoardLength, pathForDataFiles, valFiles, batchSize)
 
 model = tf.keras.Sequential([
     tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
-    tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu'),
-    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
-    tf.keras.layers.Dropout(0.24),
-    tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu'),
     tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu'),
     tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
     tf.keras.layers.Dropout(0.24),

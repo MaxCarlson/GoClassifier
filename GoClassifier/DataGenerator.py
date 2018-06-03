@@ -5,11 +5,12 @@ import numpy as np
 import tensorflow as tf
 
 class Generator:
-    def __init__(self, boardLength, filePath, batchSize):
+    def __init__(self, boardLength, filePath, fileShape, batchSize):
         self.length = boardLength
         self.size = boardLength ** 2
         self.path = filePath
         self.batchSize = batchSize
+        self.fileShape = fileShape
 
     def extractNpy(self, fileName):
         XY = np.load(fileName)
@@ -20,9 +21,12 @@ class Generator:
         X = np.expand_dims(X, axis=1)
         return X, Y
 
+    def shapeFileList(self, fileList):
+        return fileList[self.fileShape[0]:self.fileShape[1]]
+
     def generator(self):
     
-        fileList = os.listdir(self.path)
+        fileList =  self.shapeFileList(os.listdir(self.path))
 
         i = 0
         while True:
@@ -49,7 +53,8 @@ class Generator:
     # Count the number of samples for each file we're using
     def stepsPerEpoch(self):
 
-        fileList = os.listdir(self.path)
+        fileList = self.shapeFileList(os.listdir(self.path))
+        
         numFiles = len(fileList)
     
         count = 0
