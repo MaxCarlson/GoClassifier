@@ -7,6 +7,7 @@ import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 
 import numpy as np
+import random
 import keras
 from keras import backend as K
 
@@ -63,24 +64,37 @@ def extractNpy(fileName):
     X = np.expand_dims(X, axis=1)
     return X, Y
 
-def generator():
+def generator(batchSize):
     
     datasets = 5
 
     datasetIdx = 1
+
+    path = 'data'
+
+    fileList = os.listdir(path)
+
+    i = 0
     while True:
+        if i == len(fileList):
+            i = 0
+            random.shuffle(fileList)
+        sample = fileList[i]
+        
+        wholePath = path + '/' + sample
 
-        name = "data\data"
-        name += str(datasetIdx)
-        name += ".npy"
+        XX, YY = extractNpy(wholePath)
+        X = []
+        Y = []
+        for b in range(batchSize):
 
-        X, Y = extractNpy(name)
+            roll = random.randint(0, np.size(XX)[0])
 
-        datasetIdx += 1
+            X[b] = X[roll]
+            Y[b] = Y[roll]
+
         yield X, Y
-
-trainingGen = generator()
-
+        i += 1
 
 convSize = 27
 batchSize = 2000
@@ -111,7 +125,7 @@ optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
 
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy']) # Look into using to_catagorical on outputs instead of generating huge arrays of data
 
-model.fit_generator(generator=generator(), steps_per_epoch=5, verbose=2, workers=1)
+model.fit_generator(generator=generator(batchSize), steps_per_epoch=5, verbose=2, workers=1)
 
 #model.fit(X, Y, validation_data=(Xt, Yt), epochs=numEpochs, batch_size=batchSize, verbose=2)
 
