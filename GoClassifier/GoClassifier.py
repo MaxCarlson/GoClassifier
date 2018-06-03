@@ -7,9 +7,11 @@ import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 
 import numpy as np
+import keras
 from keras import backend as K
 
-from my_classes import DataGenerator
+from DataGenerator import DataGenerator
+
 
 sess = tf.Session()
 K.set_session(sess)
@@ -37,29 +39,47 @@ def extractDatasets(fileName):
     X = np.expand_dims(X, axis=1)
     return X, Y
 
-def generator(batchSize):
-    import random as rng
-
-    batchFeatures = np.zeros((batchSize, 1, BoardLength, BoardLength))
-    batchLabels = np.zeros((batchSize, 1, BoardSize))
-    
-    while True:
-        for i in range(batchSize):
-            index = rng.choice(len(features), 1)
-            batchFeatures[i] = features[index]
-            batchLabels[i] = labels[index]
-        yield batchFeatures, batchLabels
 
 X , Y  = extractDatasets(fileNameXY)
 Xt, Yt = extractDatasets(fileNameXYt)
 
 params = {'dim': (1, BoardLength, BoardLength),
-         'batch_size': 1600,
+         'batch_size': 1,
          'n_classes': BoardSize,
          'n_channels': 1,
          'shuffle': True }
 
-labels
+partition = {'train': ['data1', 'data2']}
+labels = {'train': ['data1', 'data2']}
+
+#trainingGen = DataGenerator(partition['train'], labels, **params)
+
+def extractNpy(fileName):
+    XY = np.load(fileName)
+    Y = XY[:,0]
+    Y = tf.keras.utils.to_categorical(Y, BoardSize)
+    X = XY[:,1:BoardSize+1]
+    X = np.reshape(X, (np.shape(X)[0], BoardLength, BoardLength))
+    X = np.expand_dims(X, axis=1)
+    return X, Y
+
+def generator():
+    
+    datasets = 5
+
+    datasetIdx = 1
+    while True:
+
+        name = "data\data"
+        name += str(datasetIdx)
+        name += ".npy"
+
+        X, Y = extractNpy(name)
+
+        datasetIdx += 1
+        yield X, Y
+
+trainingGen = generator()
 
 
 convSize = 27
@@ -91,9 +111,9 @@ optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
 
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy']) # Look into using to_catagorical on outputs instead of generating huge arrays of data
 
-#model.fit_generator(generator(batchSize), epochs=numEpochs, verbose=2)
+model.fit_generator(generator=generator(), steps_per_epoch=5, verbose=2, workers=1)
 
-model.fit(X, Y, validation_data=(Xt, Yt), epochs=numEpochs, batch_size=batchSize, verbose=2)
+#model.fit(X, Y, validation_data=(Xt, Yt), epochs=numEpochs, batch_size=batchSize, verbose=2)
 
 #
 #model.save_weights(WeightPath)
