@@ -1,56 +1,61 @@
-from keras.utils import Sequence
-class DataGenerator(Sequence): #
-    'Generates data for Keras'
-    def __init__(self, list_IDs, labels, batch_size=32, dim=(32,32,32), n_channels=1,
-                 n_classes=10, shuffle=True):
-        'Initialization'
-        self.dim = dim
-        self.batch_size = batch_size
-        self.labels = labels
-        self.list_IDs = list_IDs
-        self.n_channels = n_channels
-        self.n_classes = n_classes
-        self.shuffle = shuffle
-        self.on_epoch_end()
+import os
+import keras
+import random
+import numpy as np
+import tensorflow as tf
 
-    def __len__(self):
-        'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_IDs) / self.batch_size))
+class Generator:
+    def __init__(self, boardLength, filePath, batchSize):
+        self.length = boardLength
+        self.size = boardLength ** 2
+        self.path = filePath
+        self.batchSize = batchSize
 
-    def __iter__(self):
-        return self
+    def extractNpy(self, fileName):
+        XY = np.load(fileName)
+        Y = XY[:,0]
+        Y = tf.keras.utils.to_categorical(Y, self.size)
+        X = XY[:,1:self.size+1]
+        X = np.reshape(X, (np.shape(X)[0], self.length, self.length))
+        X = np.expand_dims(X, axis=1)
+        return X, Y
 
-    def __getitem__(self, index):
-        'Generate one batch of data'
-        # Generate indexes of the batch
-        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+    def generator(self):
+    
+        fileList = os.listdir(self.path)
 
-        # Find list of IDs
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        i = 0
+        while True:
+            if i == len(fileList):
+                i = 0
+                random.shuffle(fileList)
+            sample = fileList[i]
+        
+            wholePath = self.path + '/' + sample
 
-        # Generate data
-        X, y = self.__data_generation(list_IDs_temp)
+            XX, YY = self.extractNpy(wholePath)
+            X = np.zeros((self.batchSize, 1, self.length, self.length))
+            Y = np.zeros((self.batchSize, self.size))
+            for b in range(self.batchSize):
 
-        return X, y
+                roll = random.randint(0, np.shape(XX)[0]-1)
 
-    def on_epoch_end(self):
-        'Updates indexes after each epoch'
-        self.indexes = np.arange(len(self.list_IDs))
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
+                X[b] = XX[roll]
+                Y[b] = YY[roll]
 
-    def __data_generation(self, list_IDs_temp):
-        'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
-        # Initialization
-        X = np.empty((self.batch_size, *self.dim, self.n_channels))
-        y = np.empty((self.batch_size), dtype=int)
+            yield X, Y
+            i += 1
 
-        # Generate data
-        for i, ID in enumerate(list_IDs_temp):
-            # Store sample
-            X[i,] = np.load('data/' + ID + '.npy')
+    # Count the number of samples for each file we're using
+    def stepsPerEpoch(self):
 
-            # Store class
-            y[i] = self.labels[ID]
+        fileList = os.listdir(self.path)
+        numFiles = len(fileList)
+    
+        count = 0
+        for file in fileList:
+            wholePath = self.path + '/' + file
+            X, Y = self.extractNpy(wholePath)
+            count += np.shape(X)[0]
 
-        return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
+        return count / self.batchSize
