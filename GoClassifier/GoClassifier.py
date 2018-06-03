@@ -12,15 +12,17 @@ import keras
 from keras import backend as K
 
 from DataGenerator import Generator
+from Globals import BoardLength, BoardSize
+from CurateData import curateData
 
+# Uncomment this if you want to curate data from the 
+# Professional dataset https://github.com/yenw/computer-go-dataset#1-tygem-dataset
+#curateData()
 
 sess = tf.Session()
 K.set_session(sess)
 
 sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
-
-BoardLength = 19
-BoardSize = BoardLength ** 2
 
 
 WeightPath = "Weights.h5"
@@ -32,14 +34,14 @@ numEpochs = 2000
 hiddenSize = 512
 
 trainFiles = (1, 4)
-gen = Generator(BoardLength, pathForDataFiles, trainFiles, batchSize)
+gen = Generator(pathForDataFiles, trainFiles, batchSize)
 valFiles = (11, 12)
-valGen = Generator(BoardLength, pathForDataFiles, valFiles, batchSize)
+valGen = Generator(pathForDataFiles, valFiles, batchSize)
 
 model = tf.keras.Sequential([
     tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
     tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu'),
-    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+    tf.keras.layers.MaxPooling2D(pool_size=(2,2), strides=2),
     tf.keras.layers.Dropout(0.24),
     tf.keras.layers.Flatten(),
     tf.keras.layers.Dense(hiddenSize, activation='relu'),

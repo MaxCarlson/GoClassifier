@@ -3,34 +3,39 @@ import keras
 import random
 import numpy as np
 import tensorflow as tf
+from Globals import BoardSize, BoardLength
 
 class Generator:
-    def __init__(self, boardLength, filePath, fileShape, batchSize):
-        self.length = boardLength
-        self.size = boardLength ** 2
+    def __init__(self, filePath, fileShape, batchSize):
         self.path = filePath
         self.batchSize = batchSize
         self.fileShape = fileShape
 
+    # Shape the data
+    # Ideally we'd do this on saving it. 
+    # Possibly need to split up features and lables to do this effeciantly?
     def extractNpy(self, fileName):
         XY = np.load(fileName)
         Y = XY[:,0]
-        Y = tf.keras.utils.to_categorical(Y, self.size)
-        X = XY[:,1:self.size+1]
-        X = np.reshape(X, (np.shape(X)[0], self.length, self.length))
+        Y = tf.keras.utils.to_categorical(Y, BoardSize)
+        X = XY[:,1:BoardSize+1]
+        X = np.reshape(X, (np.shape(X)[0], BoardLength, BoardLength))
         X = np.expand_dims(X, axis=1)
         return X, Y
 
+    # Use only the # of files we're told to
     def shapeFileList(self, fileList):
         return fileList[self.fileShape[0]:self.fileShape[1]]
 
+    # Continuously read and generate data for the model
+    # As it likely can't fit in memory
     def generator(self):
     
         fileList =  self.shapeFileList(os.listdir(self.path))
 
         i = 0
         while True:
-            if i == len(fileList):
+            if i >= len(fileList):
                 i = 0
                 random.shuffle(fileList)
             sample = fileList[i]
@@ -38,9 +43,8 @@ class Generator:
             wholePath = self.path + '/' + sample
 
             XX, YY = self.extractNpy(wholePath)
-            X = np.zeros((self.batchSize, 1, self.length, self.length))
-            Y = np.zeros((self.batchSize, self.size))
-
+            X = np.zeros((self.batchSize, 1, BoardLength, BoardLength))
+            Y = np.zeros((self.batchSize, BoardSize))
 
             # Roll for a random spot to start the batch range slice
             m = np.shape(XX)[0] 
@@ -66,13 +70,6 @@ class Generator:
                 Y[0:m1] = YY[roll:m]
                 X[m1:self.batchSize] = XX[0:m2]
                 Y[m1:self.batchSize] = YY[0:m2]
-
-            #for b in range(self.batchSize):
-
-           #     roll = random.randint(0, np.shape(XX)[0]-1)
-            
-           #     X[b] = XX[roll]
-           #     Y[b] = YY[roll]
 
             yield X, Y
             i += 1

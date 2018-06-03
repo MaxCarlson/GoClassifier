@@ -261,3 +261,4 @@ __pycache__/
 *.pyc
 *.csv
 *.npy
+/GoClassifier/outData/pro2000+.txt

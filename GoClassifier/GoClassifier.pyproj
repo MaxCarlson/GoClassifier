@@ -21,7 +21,13 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CurateData.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DataGenerator.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Globals.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="GoClassifier.py" />
