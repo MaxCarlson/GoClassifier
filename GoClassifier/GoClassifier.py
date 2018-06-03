@@ -57,9 +57,11 @@ optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy']) # Look into using to_catagorical on outputs instead of generating huge arrays of data
 
 
-model.fit_generator(generator=gen.generator(), 
-                    epochs=numEpochs, 
+model.fit_generator(generator=gen.generator(),
                     steps_per_epoch=gen.stepsPerEpoch(),
+                    validation_data=valGen.generator(),
+                    validation_steps=valGen.stepsPerEpoch(),
+                    epochs=numEpochs, 
                     verbose=2, workers=1)
 
 
