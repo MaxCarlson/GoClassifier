@@ -31,15 +31,21 @@ class Storage:
     # TODO: figure out an easy way to save in the format we need ? [samples, 1, BoardLength, BoardLength] + y Data
     # Probably best way would be to save features in one file and labels in another 
     # (So we can save features as they are read in the model)
-    storage = np.zeros((maxMovePerFile, BoardSize+1))
+    #storage = np.zeros((maxMovePerFile, BoardSize+1))
 
     def __init__(self, outfileName, maxMovesPerFile):
         self.outfileName = outfileName
         self.maxMovePerFile = maxMovesPerFile
+        self.storage, self.yStorage = self.zeroBoard()
 
-    def asignBoard(self, board):
+    def zeroBoard(self):
+        self.storage = np.zeros((self.maxMovePerFile, 2, BoardLength, BoardLength))
+        self.yStorage = np.zeros((self.maxMovePerFile))
+        return self.storage, self.yStorage
 
+    def asignBoard(self, board, move):
         self.storage[self.strgIdx] = board
+        self.yStorage[self.strgIdx] = move
         self.strgIdx += 1
 
     def nextFile(self):
@@ -47,41 +53,48 @@ class Storage:
 
     def clear(self):
         self.strgIdx = 0
-        self.storage = np.zeros((self.maxMovePerFile, BoardSize+1))
+        self.zeroBoard()
 
     def writeToFile(self):
         
         self.nextFile() 
+        yname = self.outfileName + 'y' + str(self.fileCount)
         name = self.outfileName + str(self.fileCount)
 
         if self.strgIdx < self.maxMovePerFile:
             self.storage = self.storage[0:self.strgIdx]
+            self.yStorage = self.yStorage[0:self.strgIdx]
 
         np.save(name, self.storage)
+        np.save(yname, self.yStorage)
         self.clear()
 
-  
+# TODO: How should friendly libs be encoded?
+def calcLibs(board, idx):
+    return 5
 
 # We store the board as black/white in memory
 # but we save it according to side to move perspective
 def writeMoveAndBoardToFile(storage, m, board, col):
 
-    board[0] = m
-    storage.asignBoard(board)    
+    storage.asignBoard(board, m)    
     
     if storage.strgIdx >= storage.maxMovePerFile:
         storage.writeToFile()
 
     return
 
+colorLayer = 0
+libertyLayer = 1
+
 def makeMove(board, m, col):
-    board[m+1] = col
+    board[colorLayer][m] = col
     return
 
 
 def processGame(line, storage):
 
-    board = np.zeros(BoardSize+1)
+    board = np.zeros((2, BoardLength, BoardLength))
 
     semiCount = 0
     i = 0
@@ -140,7 +153,6 @@ def curateData():
     for i in range(count):
 
         line = file.readline()
-
 
         processGame(line, storage)
 

@@ -10,6 +10,7 @@ import numpy as np
 import random
 import keras
 from keras import backend as K
+import matplotlib.pyplot as plt
 
 from DataGenerator import Generator
 from Globals import BoardLength, BoardSize
@@ -24,31 +25,50 @@ K.set_session(sess)
 
 sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
+def plotHistory(history):
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['acc'])
+    plt.plot(history.history['val_acc'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    #plt.show()
+    # summarize history for loss
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+
 
 WeightPath = "Weights.h5"
 pathForDataFiles = 'data'
 
 batchSize = 2000
-numEpochs = 2000
+numEpochs = 250
 hiddenSize = 32
 
-trainFiles = (1, 2)
+trainFiles = (1, 6)
 gen = Generator(pathForDataFiles, trainFiles, batchSize)
 valFiles = (100, 101)
 valGen = Generator(pathForDataFiles, valFiles, batchSize)
 
-filters = 32
+filters = 64
 
 model = tf.keras.Sequential([
-    tf.keras.layers.Convolution2D(64, (3, 3), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
-    tf.keras.layers.Convolution2D(64, (3, 3), activation='relu'),
-    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
-    tf.keras.layers.Dropout(0.24),
+    tf.keras.layers.Convolution2D(filters, (5, 5), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
+    tf.keras.layers.ZeroPadding2D(padding =(4, 4), data_format='channels_first'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
+    tf.keras.layers.ZeroPadding2D(padding =(1, 1), data_format='channels_first'),
+    tf.keras.layers.Dropout(0.55),
     tf.keras.layers.Flatten(),
     tf.keras.layers.Dense(hiddenSize, activation='relu'),
-    tf.keras.layers.Dropout(0.24),
-    tf.keras.layers.Dense(hiddenSize, activation='relu'),
-    tf.keras.layers.Dropout(0.24),
+    tf.keras.layers.Dropout(0.59),
     tf.keras.layers.Dense(BoardSize, activation='softmax'),
 ])
 
@@ -58,15 +78,32 @@ optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
 
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy']) # Look into using to_catagorical on outputs instead of generating huge arrays of data
 
+def extractNpy(fileName):
+        XY = np.genfromtxt(fileName, delimiter=',')
+        Y = XY[:,0]
+        Y = tf.keras.utils.to_categorical(Y, BoardSize)
+        X = XY[:,1:BoardSize+1]
+        X = np.reshape(X, (np.shape(X)[0], BoardLength, BoardLength))
+        X = np.expand_dims(X, axis=1)
+        return X, Y
 
-model.fit_generator(generator=gen.generator(),
+X, Y = extractNpy("data80.csv")
+Xt, Yt = extractNpy('test25.csv')
+
+earlyExit = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=25)
+
+#history = model.fit(X, Y, validation_data=(Xt, Yt), batch_size=batchSize, epochs=numEpochs, verbose=2, callbacks=[earlyExit])
+
+history = model.fit_generator(generator=gen.generator(),
                     steps_per_epoch=gen.stepsPerEpoch(),
                     validation_data=valGen.generator(),
                     validation_steps=valGen.stepsPerEpoch(),
                     epochs=numEpochs, 
-                    verbose=2, workers=1)
+                    verbose=2, workers=1, callbacks=[earlyExit])
 
-model.save('LatestModel')
+plotHistory(history)
+
+#model.save('LatestModel')
 #
 #model.save_weights(WeightPath)
 
@@ -107,15 +144,15 @@ model = tf.keras.Sequential([
 ])
 
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(hiddenSize, activation='relu', input_shape=(BoardSize,)),
-    tf.keras.layers.Dropout(0.4),
-    tf.keras.layers.Dense(hiddenSize, activation='relu'),
-    tf.keras.layers.Dropout(0.4),
-    tf.keras.layers.Dense(hiddenSize, activation='relu'),
-    tf.keras.layers.Dropout(0.4),
-    tf.keras.layers.Dense(hiddenSize, activation='relu'),
-    tf.keras.layers.Dropout(0.4),
-    tf.keras.layers.Dense(hiddenSize, activation='relu'),
-    tf.keras.layers.Dropout(0.4),
+    tf.keras.layers.Dense(1024, activation='relu', input_shape=(BoardSize,)),
+    tf.keras.layers.Dropout(0.45),
+    tf.keras.layers.Dense(1024, activation='relu'),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(1024, activation='relu'),
+    tf.keras.layers.Dropout(0.45),
+    tf.keras.layers.Dense(1024, activation='relu'),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(1024, activation='relu'),
+    tf.keras.layers.Dropout(0.45),
     tf.keras.layers.Dense(BoardSize, activation='softmax')
 ])
