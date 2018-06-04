@@ -110,6 +110,20 @@ def processGame(line, storage):
         col = flipCol(col)
         i += 6
 
+# TODO: Implement Alpha go encoding
+# OR something more complete than 1d plane
+#
+# Stone Color  3
+# Ones         1
+# Turns Since  8
+# Liberties    8
+# Cap Size     8
+# Slf-Atari    8
+# Lib after Mv 8
+# Ladder Cap   1
+# Sensible     1
+# Zeros        1
+# Player Color 1
 def curateData():
 
     movesPerFile = 10000

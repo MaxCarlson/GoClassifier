@@ -28,20 +28,21 @@ sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 WeightPath = "Weights.h5"
 pathForDataFiles = 'data'
 
-convSize = 32
 batchSize = 2000
 numEpochs = 2000
-hiddenSize = 512
+hiddenSize = 32
 
-trainFiles = (1, 4)
+trainFiles = (1, 2)
 gen = Generator(pathForDataFiles, trainFiles, batchSize)
-valFiles = (11, 12)
+valFiles = (100, 101)
 valGen = Generator(pathForDataFiles, valFiles, batchSize)
 
+filters = 32
+
 model = tf.keras.Sequential([
-    tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
-    tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu'),
-    tf.keras.layers.MaxPooling2D(pool_size=(2,2), strides=2),
+    tf.keras.layers.Convolution2D(64, (3, 3), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
+    tf.keras.layers.Convolution2D(64, (3, 3), activation='relu'),
+    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
     tf.keras.layers.Dropout(0.24),
     tf.keras.layers.Flatten(),
     tf.keras.layers.Dense(hiddenSize, activation='relu'),
@@ -50,7 +51,6 @@ model = tf.keras.Sequential([
     tf.keras.layers.Dropout(0.24),
     tf.keras.layers.Dense(BoardSize, activation='softmax'),
 ])
-
 
 model.summary()
 
@@ -66,14 +66,36 @@ model.fit_generator(generator=gen.generator(),
                     epochs=numEpochs, 
                     verbose=2, workers=1)
 
-
+model.save('LatestModel')
 #
 #model.save_weights(WeightPath)
 
+# Alpha go like model
+model = tf.keras.Sequential([
+    tf.keras.layers.Convolution2D(filters, (5, 5), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
+    tf.keras.layers.ZeroPadding2D(padding=(4,4), data_format='channels_first'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
+    tf.keras.layers.ZeroPadding2D(padding=(1,1), data_format='channels_first'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
+    tf.keras.layers.ZeroPadding2D(padding=(1,1), data_format='channels_first'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
+    tf.keras.layers.ZeroPadding2D(padding=(1,1), data_format='channels_first'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
+    tf.keras.layers.ZeroPadding2D(padding=(1,1), data_format='channels_first'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
+    tf.keras.layers.ZeroPadding2D(padding=(1,1), data_format='channels_first'),
+    tf.keras.layers.Dropout(0.24),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(hiddenSize, activation='relu'),
+    tf.keras.layers.Dropout(0.24),
+    tf.keras.layers.Dense(BoardSize, activation='softmax'),
+])
+
 # Current best, though it's compute heavy convSize=64
 model = tf.keras.Sequential([
-    tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
-    tf.keras.layers.Convolution2D(convSize, (3, 3), activation='relu'),
+    tf.keras.layers.Convolution2D(64, (3, 3), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
+    tf.keras.layers.Convolution2D(64, (3, 3), activation='relu'),
     tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
     tf.keras.layers.Dropout(0.24),
     tf.keras.layers.Flatten(),
