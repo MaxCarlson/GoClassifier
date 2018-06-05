@@ -12,9 +12,10 @@ def idxToXy(idx):
     y = idx // BoardLength
     return x, y
 
-BLACK = 1
-EMPTY = 0
-WHITE = -1
+EMPTY     = 0
+BLACK     = 1
+WHITE     = 2
+OFF_BOARD = 3
 
 def emptyOrFriendly(col, other):
     if other == EMPTY or other == col:
@@ -27,7 +28,7 @@ def flipCol(col):
     return BLACK
 
 def flipColForWr(val, col):
-    if col == 0 or col == BLACK:
+    if col == EMPTY or col == BLACK:
         return val
     return flipCol(val)
 
@@ -48,37 +49,76 @@ class Move:
     def processMove(self, m):
         x = ord(m[2])
         y = ord(m[3])
-        x = x - ord('a')
-        y = y - ord('a')
-        return moveToIdx(x, y)
+        self.x = x - ord('a')
+        self.y = y - ord('a')
+        return moveToIdx(self.x, self.y)
 
     def paddedMoveIdx(self, idx):
-        x, y = idxToXy(idx)
-        return (x+1) * mBoardLength + (y+1)
+        self.pX = self.x + 1
+        self.pY = self.y + 1
+        return self.pX * mBoardLength + self.pY
 
 class Board:
+    # Final output layer #'s
+    # All ones if black, all zeros if white
     ColorLayer = 0
-    LibLayer = 1
+    PlayerLayer = 1
+    OpponentLayer = 2
+    #
+    # Not added yet
+    # Player libs
+    # Opponent libs
+
+    # Actual encoding before asigning
+    internalDepth = 1
+    # Stone layer (Black,White, Empty)
+    StoneLayer = 0
+    #
+    # Not added yet
+    # Black libs
+    # White libs
 
     def __init__(self):
-        self.board = np.zeros((BoardDepth, mBoardSize))
+        self.board = np.zeros((self.internalDepth, mBoardLength, mBoardLength))
+        self.board.fill(OFF_BOARD)
+        self.board[0:self.internalDepth, 1:BoardLength+1, 1:BoardLength+1] = EMPTY
 
     def makeMove(self, m, col):
         # TODO: Forgot to change board based on our color!!!!
         # Very big mistake
-        self.board[self.ColorLayer][m.pIdx] = col
-        self.board[self.LibLayer][m.pIdx] = self.calcLibs(m, col)
+        self.board[self.ColorLayer, m.pX, m.pY] = col
+
+    def at(self, layer, x, y):
+        return self.board[layer, x, y]
+
+    def neightCount(self, layer, move, lmbda):       
+        self.at(layer, move.pX-1, move.pY)
+        self.at(layer, move.pX+1, move.pY)
+        self.at(layer, move.pX, move.pY-1)
+        self.at(layer, move.pX, move.pY+1)
 
     def calcLibs(self, m, col):
-        libs = 4
+        libs = 4    
         return libs
 
     # Reshape to a square board
     # Slice off the extra sides we don't want
     def returnRealBoard(self):
-        b = np.reshape(self.board, (BoardDepth, mBoardLength, mBoardLength))
-        b = b[0:BoardDepth, 1:BoardLength+1, 1:BoardLength+1]
-        return b
+        return self.board[0:self.internalDepth, 1:BoardLength+1, 1:BoardLength+1]
+
+    # Convert to binary encoded feature map
+    def convertToFeatureMap(self, color):
+        rb = self.returnRealBoard()
+        ftMap = np.zeros((BoardDepth, BoardLength, BoardLength))
+        # Add feature side to move
+        ftMap[self.ColorLayer] = 1 if color == BLACK else 0
+
+        # Add both layers representing stone types
+        opponent = WHITE if color == BLACK else BLACK
+        ftMap[self.PlayerLayer] = rb[self.StoneLayer] == color
+        ftMap[self.OpponentLayer] = rb[self.StoneLayer] == opponent
+        return ftMap
+        
 
 class Storage:
     fileCount = 0
@@ -100,7 +140,7 @@ class Storage:
         return self.storage, self.yStorage
 
     def asignBoard(self, board, move):
-        self.storage[self.strgIdx] = board.returnRealBoard()
+        self.storage[self.strgIdx] = board.convertToFeatureMap(move.color)
         self.yStorage[self.strgIdx] = move.idx 
         self.strgIdx += 1
 
