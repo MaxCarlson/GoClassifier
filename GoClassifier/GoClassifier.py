@@ -49,33 +49,48 @@ WeightPath = "Weights.h5"
 featurePath = 'data/features'
 labelPath = 'data/labels'
 
-batchSize = 2000
+batchSize = 512
 numEpochs = 250
 hiddenSize = 32
 
-trainFiles = (1, 6)
+trainFiles = (1, 26)
 gen = Generator(featurePath, labelPath, trainFiles, batchSize)
-#valFiles = (100, 101)
-#valGen = Generator(pathForDataFiles, valFiles, batchSize)
+valFiles = (27, 28)
+valGen = Generator(featurePath, labelPath, valFiles, batchSize)
 
 filters = 64
 
 model = tf.keras.Sequential([
-    tf.keras.layers.Convolution2D(filters, (5, 5), activation='relu', input_shape=(BoardDepth, BoardLength, BoardLength), data_format='channels_first'), 
+    tf.keras.layers.Convolution2D(filters, (5, 5),  input_shape=(BoardDepth, BoardLength, BoardLength), data_format='channels_first'), 
     tf.keras.layers.ZeroPadding2D(padding =(4, 4), data_format='channels_first'),
-    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
-    tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
+    tf.keras.layers.BatchNormalization(axis=1, momentum=0.99), # Giving bad results?
+    tf.keras.layers.Dropout(0.25),
+    tf.keras.layers.Activation('relu'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), data_format='channels_first'),
+    tf.keras.layers.BatchNormalization(axis=1, momentum=0.99),
+    tf.keras.layers.Dropout(0.25),
+    tf.keras.layers.Activation('relu'),
+    #tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+    tf.keras.layers.Convolution2D(filters, (3, 3), data_format='channels_first'),
     tf.keras.layers.ZeroPadding2D(padding =(1, 1), data_format='channels_first'),
-    tf.keras.layers.Dropout(0.35),
+    tf.keras.layers.BatchNormalization(axis=1, momentum=0.99),
+    tf.keras.layers.Dropout(0.25),
+    tf.keras.layers.Activation('relu'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), data_format='channels_first'),
+    tf.keras.layers.BatchNormalization(axis=1, momentum=0.99),
+    tf.keras.layers.Activation('relu'),
+    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+    tf.keras.layers.Dropout(0.20),
     tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(hiddenSize, activation='relu'),
-    tf.keras.layers.Dropout(0.39),
+    #tf.keras.layers.Dense(hiddenSize, activation='relu'),
+    #tf.keras.layers.Dropout(0.35),
+    #tf.keras.layers.BatchNormalization(),
     tf.keras.layers.Dense(BoardSize, activation='softmax'),
 ])
 
 model.summary()
 
-optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.0018)
 
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy']) # Look into using to_catagorical on outputs instead of generating huge arrays of data
 
@@ -91,14 +106,14 @@ def extractNpy(fileName):
 #X, Y = extractNpy("data80.csv")
 #Xt, Yt = extractNpy('test25.csv')
 
-earlyExit = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=20)
+earlyExit = keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0, patience=4)
 
 #history = model.fit(X, Y, validation_data=(Xt, Yt), batch_size=batchSize, epochs=numEpochs, verbose=2, callbacks=[earlyExit])
 
 history = model.fit_generator(generator=gen.generator(),
                     steps_per_epoch=gen.stepsPerEpoch(),
-                    #validation_data=valGen.generator(),
-                    #validation_steps=valGen.stepsPerEpoch(),
+                    validation_data=valGen.generator(),
+                    validation_steps=valGen.stepsPerEpoch(),
                     epochs=numEpochs, 
                     verbose=2, workers=1, callbacks=[earlyExit])
 

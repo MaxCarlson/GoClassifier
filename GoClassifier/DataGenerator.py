@@ -38,22 +38,24 @@ class Generator:
     # As it likely can't fit in memory
     def generator(self):
     
-        fList = os.listdir(self.featurePath)
-        lList = os.listdir(self.labelPath)
+        fList = self.shapeFileList(os.listdir(self.featurePath))
+        lList = self.shapeFileList(os.listdir(self.labelPath))
 
         indices = np.arange(0, len(fList))
 
         i = 0
         while True:
-            if i >= len(fileList):
+            if i >= len(fList):
                 i = 0
-                random.shuffle(fileList)
-            sample = fileList[i]
-        
-            wholePath = self.path + '/' + sample
-            wholePathy = self.path + '/'
+                random.shuffle(indices)
 
-            XX, YY = self.extractNpy(wholePath)
+            sampleF = fList[indices[i]]
+            sampleL = lList[indices[i]]
+        
+            wholePathF = self.featurePath + '/' + sampleF
+            wholePathL = self.labelPath + '/' + sampleL
+
+            XX, YY = self.extractNpy(wholePathF, wholePathL)
             X = np.zeros((self.batchSize, BoardDepth, BoardLength, BoardLength))
             Y = np.zeros((self.batchSize, BoardSize))
 

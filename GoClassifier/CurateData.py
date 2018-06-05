@@ -154,12 +154,19 @@ class Storage:
     def writeToFile(self):
         
         self.nextFile() 
-        yname = self.outfileName + 'y' + str(self.fileCount)
-        name = self.outfileName + str(self.fileCount)
+        yname = self.outfileName + 'l' + str(self.fileCount)
+        name = self.outfileName  + 'f' + str(self.fileCount)
 
         if self.strgIdx < self.maxMovePerFile:
             self.storage = self.storage[0:self.strgIdx]
             self.yStorage = self.yStorage[0:self.strgIdx]
+
+        # Shuffle the results so we don't have large chunks of games
+        # next to eachtoher
+        state = np.random.get_state()
+        np.random.shuffle(self.storage)
+        np.random.set_state(state)
+        np.random.shuffle(self.yStorage)
 
         np.save(name, self.storage)
         np.save(yname, self.yStorage)
@@ -175,6 +182,8 @@ def writeMoveAndBoardToFile(storage, move, board, col):
         storage.writeToFile()
 
     return
+
+testt = 0
 
 def processGame(line, storage):
 
@@ -194,12 +203,20 @@ def processGame(line, storage):
             semiCount += 1
         elif semiCount > 1:
             break
- 
+
+    global testt
+    testt += 1
+
     # Process game into moves and boards
     col = BLACK
     last = False
     while i < len(line):
         mv = line[i-1:i+5]
+
+        # Ignore games with passes in them for the moment!
+        if mv[2] == ']':
+            break
+
         m = Move(mv)
 
         writeMoveAndBoardToFile(storage, m, board, col)
