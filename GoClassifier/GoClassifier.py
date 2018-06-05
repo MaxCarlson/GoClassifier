@@ -13,12 +13,12 @@ from keras import backend as K
 import matplotlib.pyplot as plt
 
 from DataGenerator import Generator
-from Globals import BoardLength, BoardSize
+from Globals import BoardLength, BoardSize, BoardDepth
 from CurateData import curateData
 
 # Uncomment this if you want to curate data from the 
 # Professional dataset https://github.com/yenw/computer-go-dataset#1-tygem-dataset
-curateData()
+#curateData()
 
 sess = tf.Session()
 K.set_session(sess)
@@ -46,21 +46,22 @@ def plotHistory(history):
 
 
 WeightPath = "Weights.h5"
-pathForDataFiles = 'data'
+featurePath = 'data/features'
+labelPath = 'data/labels'
 
 batchSize = 2000
 numEpochs = 250
 hiddenSize = 32
 
 trainFiles = (1, 6)
-gen = Generator(pathForDataFiles, trainFiles, batchSize)
-valFiles = (100, 101)
-valGen = Generator(pathForDataFiles, valFiles, batchSize)
+gen = Generator(featurePath, labelPath, trainFiles, batchSize)
+#valFiles = (100, 101)
+#valGen = Generator(pathForDataFiles, valFiles, batchSize)
 
 filters = 64
 
 model = tf.keras.Sequential([
-    tf.keras.layers.Convolution2D(filters, (5, 5), activation='relu', input_shape=(1, BoardLength, BoardLength), data_format='channels_first'), 
+    tf.keras.layers.Convolution2D(filters, (5, 5), activation='relu', input_shape=(BoardDepth, BoardLength, BoardLength), data_format='channels_first'), 
     tf.keras.layers.ZeroPadding2D(padding =(4, 4), data_format='channels_first'),
     tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
     tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
@@ -87,8 +88,8 @@ def extractNpy(fileName):
         X = np.expand_dims(X, axis=1)
         return X, Y
 
-X, Y = extractNpy("data80.csv")
-Xt, Yt = extractNpy('test25.csv')
+#X, Y = extractNpy("data80.csv")
+#Xt, Yt = extractNpy('test25.csv')
 
 earlyExit = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=20)
 
@@ -96,8 +97,8 @@ earlyExit = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, p
 
 history = model.fit_generator(generator=gen.generator(),
                     steps_per_epoch=gen.stepsPerEpoch(),
-                    validation_data=valGen.generator(),
-                    validation_steps=valGen.stepsPerEpoch(),
+                    #validation_data=valGen.generator(),
+                    #validation_steps=valGen.stepsPerEpoch(),
                     epochs=numEpochs, 
                     verbose=2, workers=1, callbacks=[earlyExit])
 

@@ -3,24 +3,31 @@ import keras
 import random
 import numpy as np
 import tensorflow as tf
-from Globals import BoardSize, BoardLength
+from Globals import BoardSize, BoardLength, BoardDepth
 
 class Generator:
-    def __init__(self, filePath, fileShape, batchSize):
-        self.path = filePath
+    def __init__(self, featurePath, labelPath, fileShape, batchSize):
+        self.featurePath = featurePath
+        self.labelPath = labelPath
         self.batchSize = batchSize
         self.fileShape = fileShape
 
     # Shape the data
     # Ideally we'd do this on saving it. 
     # Possibly need to split up features and lables to do this effeciantly?
-    def extractNpy(self, fileName):
-        XY = np.load(fileName)
-        Y = XY[:,0]
+    #def extractNpy(self, fileName):
+    #    XY = np.load(fileName)
+    #    Y = XY[:,0]
+    #    Y = tf.keras.utils.to_categorical(Y, BoardSize)
+    #    X = XY[:,1:BoardSize+1]
+    #    X = np.reshape(X, (np.shape(X)[0], BoardLength, BoardLength))
+    #    X = np.expand_dims(X, axis=1)
+    #    return X, Y
+
+    def extractNpy(self, xFile, yFile):
+        X = np.load(xFile)
+        Y = np.load(yFile)
         Y = tf.keras.utils.to_categorical(Y, BoardSize)
-        X = XY[:,1:BoardSize+1]
-        X = np.reshape(X, (np.shape(X)[0], BoardLength, BoardLength))
-        X = np.expand_dims(X, axis=1)
         return X, Y
 
     # Use only the # of files we're told to
@@ -31,7 +38,10 @@ class Generator:
     # As it likely can't fit in memory
     def generator(self):
     
-        fileList =  self.shapeFileList(os.listdir(self.path))
+        fList = os.listdir(self.featurePath)
+        lList = os.listdir(self.labelPath)
+
+        indices = np.arange(0, len(fList))
 
         i = 0
         while True:
@@ -41,9 +51,10 @@ class Generator:
             sample = fileList[i]
         
             wholePath = self.path + '/' + sample
+            wholePathy = self.path + '/'
 
             XX, YY = self.extractNpy(wholePath)
-            X = np.zeros((self.batchSize, 1, BoardLength, BoardLength))
+            X = np.zeros((self.batchSize, BoardDepth, BoardLength, BoardLength))
             Y = np.zeros((self.batchSize, BoardSize))
 
             # Roll for a random spot to start the batch range slice
@@ -77,14 +88,15 @@ class Generator:
     # Count the number of samples for each file we're using
     def stepsPerEpoch(self):
 
-        fileList = self.shapeFileList(os.listdir(self.path))
+        featureList = self.shapeFileList(os.listdir(self.featurePath))
+        labelList = self.shapeFileList(os.listdir(self.labelPath))
         
-        numFiles = len(fileList)
-    
+        numFiles = len(labelList)  
         count = 0
-        for file in fileList:
-            wholePath = self.path + '/' + file
-            X, Y = self.extractNpy(wholePath)
-            count += np.shape(X)[0]
+        for i in range(0 , numFiles):
+            featurePath = self.featurePath + '/' + featureList[i]
+            labelPath = self.labelPath + '/' + labelList[i]
+            X, Y = self.extractNpy(featurePath, labelPath)
+            count += np.shape(Y)[0]
 
         return count / self.batchSize

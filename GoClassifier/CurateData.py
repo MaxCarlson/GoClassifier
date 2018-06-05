@@ -113,7 +113,7 @@ class Board:
         # Add feature side to move
         ftMap[self.ColorLayer] = 1 if color == BLACK else 0
 
-        # Add both layers representing stone types
+        # Add both layers representing player and opponent stones
         opponent = WHITE if color == BLACK else BLACK
         ftMap[self.PlayerLayer] = rb[self.StoneLayer] == color
         ftMap[self.OpponentLayer] = rb[self.StoneLayer] == opponent
@@ -160,8 +160,6 @@ class Storage:
         if self.strgIdx < self.maxMovePerFile:
             self.storage = self.storage[0:self.strgIdx]
             self.yStorage = self.yStorage[0:self.strgIdx]
-
-        #np.reshape(self.storage, (self.strgIdx, BoardDepth, BoardLength, BoardLength))
 
         np.save(name, self.storage)
         np.save(yname, self.yStorage)
