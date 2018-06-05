@@ -9,7 +9,7 @@ def moveToIdx(x, y):
 
 def idxToXy(idx):
     x = idx % BoardLength
-    y = idx / BoardLength
+    y = idx // BoardLength
     return x, y
 
 BLACK = 1
@@ -33,10 +33,17 @@ def flipColForWr(val, col):
 
 class Move:
     def __init__(self, str):
+        self.color = self.getColor(str)
         # Actual index
-        self.idx = self.processMove(str)
+        self.idx = int(self.processMove(str))
         # Padded index
-        self.pIdx = self.paddedMoveIdx(self.idx)
+        self.pIdx = int(self.paddedMoveIdx(self.idx))
+
+    def getColor(self, str):
+        ch = str[0]
+        if ch == 'B' or ch == 'b':
+            return BLACK
+        return WHITE
 
     def processMove(self, m):
         x = ord(m[2])
@@ -46,27 +53,32 @@ class Move:
         return moveToIdx(x, y)
 
     def paddedMoveIdx(self, idx):
-        x, y = idxToXy(m)
+        x, y = idxToXy(idx)
         return (x+1) * mBoardLength + (y+1)
 
 class Board:
-    colorLayer = 0
-    libLayer = 1
+    ColorLayer = 0
+    LibLayer = 1
 
     def __init__(self):
         self.board = np.zeros((BoardDepth, mBoardSize))
 
-    def makeMove(self, board, m, col):
+    def makeMove(self, m, col):
         # TODO: Forgot to change board based on our color!!!!
         # Very big mistake
-        self.board[colorLayer][m.pIdx] = col
-        self.board[libLayer][m.pIdx] = self.calcLibs(board, m, col)
+        self.board[self.ColorLayer][m.pIdx] = col
+        self.board[self.LibLayer][m.pIdx] = self.calcLibs(m, col)
 
-    # TODO: How should friendly libs be encoded?
-    def calcLibs(board, m, col):
+    def calcLibs(self, m, col):
         libs = 4
         return libs
-        
+
+    # Reshape to a square board
+    # Slice off the extra sides we don't want
+    def returnRealBoard(self):
+        b = np.reshape(self.board, (BoardDepth, mBoardLength, mBoardLength))
+        b = b[0:BoardDepth, 1:BoardLength+1, 1:BoardLength+1]
+        return b
 
 class Storage:
     fileCount = 0
@@ -83,12 +95,12 @@ class Storage:
         self.storage, self.yStorage = self.zeroBoard()
 
     def zeroBoard(self):
-        self.storage = np.zeros((self.maxMovePerFile, BoardDepth, mBoardSize))
+        self.storage = np.zeros((self.maxMovePerFile, BoardDepth, BoardLength, BoardLength))
         self.yStorage = np.zeros((self.maxMovePerFile))
         return self.storage, self.yStorage
 
     def asignBoard(self, board, move):
-        self.storage[self.strgIdx] = board
+        self.storage[self.strgIdx] = board.returnRealBoard()
         self.yStorage[self.strgIdx] = move.idx 
         self.strgIdx += 1
 
@@ -109,7 +121,7 @@ class Storage:
             self.storage = self.storage[0:self.strgIdx]
             self.yStorage = self.yStorage[0:self.strgIdx]
 
-        np.reshape(self.storage, (self.strgIdx, BoardDepth, BoardLength, BoardLength))
+        #np.reshape(self.storage, (self.strgIdx, BoardDepth, BoardLength, BoardLength))
 
         np.save(name, self.storage)
         np.save(yname, self.yStorage)
@@ -131,7 +143,7 @@ def processGame(line, storage):
     # We'll convert the board array to 19x19 when we write it to the file
     # for now we'll just use the move index
     # TODO: add 1 tile edges to board to make it easier to compute things like libs
-    board = np.zeros((BoardDepth, mBoardSize))
+    board = Board()
 
     semiCount = 0
     i = 0
@@ -153,7 +165,7 @@ def processGame(line, storage):
         m = Move(mv)
 
         writeMoveAndBoardToFile(storage, m, board, col)
-        makeMove(board, m, col)
+        board.makeMove(m, col)
         col = flipCol(col)
         i += 6
 
