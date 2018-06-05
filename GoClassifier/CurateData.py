@@ -1,18 +1,25 @@
 import numpy as np
-from Globals import BoardLength, BoardSize
+from Globals import BoardLength, BoardSize, BoardDepth
+
+mBoardLength = BoardLength + 2
+mBoardSize = mBoardLength ** 2
 
 def moveToIdx(x, y):
     return x * BoardLength + y
 
-def processMove(m):
-    x = ord(m[2])
-    y = ord(m[3])
-    x = x - ord('a')
-    y = y - ord('a')
-    return moveToIdx(x, y)
+def idxToXy(idx):
+    x = idx % BoardLength
+    y = idx / BoardLength
+    return x, y
 
 BLACK = 1
+EMPTY = 0
 WHITE = -1
+
+def emptyOrFriendly(col, other):
+    if other == EMPTY or other == col:
+        return True
+    return False
 
 def flipCol(col):
     if col == BLACK:
@@ -23,6 +30,43 @@ def flipColForWr(val, col):
     if col == 0 or col == BLACK:
         return val
     return flipCol(val)
+
+class Move:
+    def __init__(self, str):
+        # Actual index
+        self.idx = self.processMove(str)
+        # Padded index
+        self.pIdx = self.paddedMoveIdx(self.idx)
+
+    def processMove(self, m):
+        x = ord(m[2])
+        y = ord(m[3])
+        x = x - ord('a')
+        y = y - ord('a')
+        return moveToIdx(x, y)
+
+    def paddedMoveIdx(self, idx):
+        x, y = idxToXy(m)
+        return (x+1) * mBoardLength + (y+1)
+
+class Board:
+    colorLayer = 0
+    libLayer = 1
+
+    def __init__(self):
+        self.board = np.zeros((BoardDepth, mBoardSize))
+
+    def makeMove(self, board, m, col):
+        # TODO: Forgot to change board based on our color!!!!
+        # Very big mistake
+        self.board[colorLayer][m.pIdx] = col
+        self.board[libLayer][m.pIdx] = self.calcLibs(board, m, col)
+
+    # TODO: How should friendly libs be encoded?
+    def calcLibs(board, m, col):
+        libs = 4
+        return libs
+        
 
 class Storage:
     fileCount = 0
@@ -39,13 +83,13 @@ class Storage:
         self.storage, self.yStorage = self.zeroBoard()
 
     def zeroBoard(self):
-        self.storage = np.zeros((self.maxMovePerFile, 2, BoardLength, BoardLength))
+        self.storage = np.zeros((self.maxMovePerFile, BoardDepth, mBoardSize))
         self.yStorage = np.zeros((self.maxMovePerFile))
         return self.storage, self.yStorage
 
     def asignBoard(self, board, move):
         self.storage[self.strgIdx] = board
-        self.yStorage[self.strgIdx] = move
+        self.yStorage[self.strgIdx] = move.idx 
         self.strgIdx += 1
 
     def nextFile(self):
@@ -65,36 +109,29 @@ class Storage:
             self.storage = self.storage[0:self.strgIdx]
             self.yStorage = self.yStorage[0:self.strgIdx]
 
+        np.reshape(self.storage, (self.strgIdx, BoardDepth, BoardLength, BoardLength))
+
         np.save(name, self.storage)
         np.save(yname, self.yStorage)
         self.clear()
 
-# TODO: How should friendly libs be encoded?
-def calcLibs(board, idx):
-    return 5
-
 # We store the board as black/white in memory
 # but we save it according to side to move perspective
-def writeMoveAndBoardToFile(storage, m, board, col):
+def writeMoveAndBoardToFile(storage, move, board, col):
 
-    storage.asignBoard(board, m)    
+    storage.asignBoard(board, move)    
     
     if storage.strgIdx >= storage.maxMovePerFile:
         storage.writeToFile()
 
     return
 
-colorLayer = 0
-libertyLayer = 1
-
-def makeMove(board, m, col):
-    board[colorLayer][m] = col
-    return
-
-
 def processGame(line, storage):
 
-    board = np.zeros((2, BoardLength, BoardLength))
+    # We'll convert the board array to 19x19 when we write it to the file
+    # for now we'll just use the move index
+    # TODO: add 1 tile edges to board to make it easier to compute things like libs
+    board = np.zeros((BoardDepth, mBoardSize))
 
     semiCount = 0
     i = 0
@@ -113,10 +150,7 @@ def processGame(line, storage):
     last = False
     while i < len(line):
         mv = line[i-1:i+5]
-        m = processMove(mv)
-
-        if i + 6 >= len(line):
-            a = 5
+        m = Move(mv)
 
         writeMoveAndBoardToFile(storage, m, board, col)
         makeMove(board, m, col)
@@ -125,7 +159,7 @@ def processGame(line, storage):
 
 # TODO: Implement Alpha go encoding
 # OR something more complete than 1d plane
-#
+#              # of layers dedicated to
 # Stone Color  3
 # Ones         1
 # Turns Since  8

@@ -18,7 +18,7 @@ from CurateData import curateData
 
 # Uncomment this if you want to curate data from the 
 # Professional dataset https://github.com/yenw/computer-go-dataset#1-tygem-dataset
-#curateData()
+curateData()
 
 sess = tf.Session()
 K.set_session(sess)
@@ -65,10 +65,10 @@ model = tf.keras.Sequential([
     tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
     tf.keras.layers.Convolution2D(filters, (3, 3), activation='relu', data_format='channels_first'),
     tf.keras.layers.ZeroPadding2D(padding =(1, 1), data_format='channels_first'),
-    tf.keras.layers.Dropout(0.55),
+    tf.keras.layers.Dropout(0.35),
     tf.keras.layers.Flatten(),
     tf.keras.layers.Dense(hiddenSize, activation='relu'),
-    tf.keras.layers.Dropout(0.59),
+    tf.keras.layers.Dropout(0.39),
     tf.keras.layers.Dense(BoardSize, activation='softmax'),
 ])
 
@@ -90,7 +90,7 @@ def extractNpy(fileName):
 X, Y = extractNpy("data80.csv")
 Xt, Yt = extractNpy('test25.csv')
 
-earlyExit = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=25)
+earlyExit = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=20)
 
 #history = model.fit(X, Y, validation_data=(Xt, Yt), batch_size=batchSize, epochs=numEpochs, verbose=2, callbacks=[earlyExit])
 
