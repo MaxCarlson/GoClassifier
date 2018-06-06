@@ -21,6 +21,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Board.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="CurateData.py">
       <SubType>Code</SubType>
     </Compile>
