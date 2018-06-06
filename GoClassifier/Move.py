@@ -11,7 +11,7 @@ class Move:
         # Actual index
         self.idx = int(self.processMove(str))
         # Padded index
-        self.pIdx = int(self.paddedMoveIdx(self.idx))
+        self.pIdx = int(self.paddedMoveIdx())
 
     def getColor(self, str):
         ch = str[0]
@@ -26,7 +26,7 @@ class Move:
         self.y = y - ord('a')
         return moveToIdx(self.x, self.y)
 
-    def paddedMoveIdx(self, idx):
+    def paddedMoveIdx(self):
         self.pX = self.x + 1
         self.pY = self.y + 1
         return self.pX * BoardLengthP + self.pY  
