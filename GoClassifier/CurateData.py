@@ -242,8 +242,8 @@ def curateData():
 
     movesPerFile = 10000
     outFolder = 'outData/' 
-    outfilename = outFolder + input("Enter output file name:")
-    count = int(input("Enter number of games to read:"))
+    outfilename = outFolder + input("Enter output file name: ")
+    count = int(input("Enter number of games to write to disk: "))
 
     filename = outFolder + 'pro2000+.txt'
     file = open(filename)

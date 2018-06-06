@@ -53,9 +53,9 @@ batchSize = 512
 numEpochs = 250
 hiddenSize = 32
 
-trainFiles = (1, 26)
+trainFiles = (1, 70)
 gen = Generator(featurePath, labelPath, trainFiles, batchSize)
-valFiles = (27, 28)
+valFiles = (72, 73)
 valGen = Generator(featurePath, labelPath, valFiles, batchSize)
 
 filters = 64
@@ -70,7 +70,11 @@ model = tf.keras.Sequential([
     tf.keras.layers.BatchNormalization(axis=1, momentum=0.99),
     tf.keras.layers.Dropout(0.25),
     tf.keras.layers.Activation('relu'),
-    #tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+    tf.keras.layers.Convolution2D(filters, (3, 3), data_format='channels_first'),
+    tf.keras.layers.ZeroPadding2D(padding =(1, 1), data_format='channels_first'),
+    tf.keras.layers.BatchNormalization(axis=1, momentum=0.99),
+    tf.keras.layers.Dropout(0.25),
+    tf.keras.layers.Activation('relu'),
     tf.keras.layers.Convolution2D(filters, (3, 3), data_format='channels_first'),
     tf.keras.layers.ZeroPadding2D(padding =(1, 1), data_format='channels_first'),
     tf.keras.layers.BatchNormalization(axis=1, momentum=0.99),
@@ -80,7 +84,18 @@ model = tf.keras.Sequential([
     tf.keras.layers.BatchNormalization(axis=1, momentum=0.99),
     tf.keras.layers.Activation('relu'),
     tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
-    tf.keras.layers.Dropout(0.20),
+    tf.keras.layers.Dropout(0.25),
+    tf.keras.layers.Convolution2D(filters, (3, 3), data_format='channels_first'),
+    tf.keras.layers.ZeroPadding2D(padding =(1, 1), data_format='channels_first'),
+    tf.keras.layers.BatchNormalization(axis=1, momentum=0.99),
+    tf.keras.layers.Dropout(0.25),
+    tf.keras.layers.Activation('relu'),
+    tf.keras.layers.Convolution2D(filters, (3, 3), data_format='channels_first'),
+    tf.keras.layers.ZeroPadding2D(padding =(1, 1), data_format='channels_first'),
+    tf.keras.layers.BatchNormalization(axis=1, momentum=0.99),
+    tf.keras.layers.Dropout(0.25),
+    tf.keras.layers.Activation('relu'),
+    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
     tf.keras.layers.Flatten(),
     #tf.keras.layers.Dense(hiddenSize, activation='relu'),
     #tf.keras.layers.Dropout(0.35),
