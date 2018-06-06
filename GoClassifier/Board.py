@@ -8,7 +8,19 @@ def pidxToXy(idx):
     y = idx // BoardLengthP
     return x, y
 
-GROUP_MAX_LIBS = 5
+GROUP_MAX_LIBS = 7
+GROUP_REFILL_LIBS = 5
+
+def printBoard(board):
+    print('\n')
+    print(board.board)
+    print('\n')
+
+def printGroups(board):
+    print('\n')
+    ng = np.reshape(board.groups.groupByIdx, (BoardLengthP, BoardLengthP))
+    print(ng)
+    print('\n')
 
 class Group:
     def __init__(self):
@@ -23,52 +35,84 @@ class Group:
         self.lib[self.libs] = idx
         self.libs += 1
 
-    def clear(self):
-        self = Group()
+    def refillLibs(self, board):
+
+        return
+
+    def addStone(self, board, idx, neighIdxs):
+        self.stones.append(idx)
+   
+        for n in neighIdxs:
+            if board.at(n) == EMPTY:
+                self.addLib(n)
+
+    def removeLib(self, board, idx):
+        
+        for i in range(0,self.libs):
+            if self.lib[i] == idx:
+                self.libs -= 1
+                self.lib[i] = self.lib[self.libs]
+                break
+
+        if self.libs < GROUP_REFILL_LIBS:
+            self.refillLibs(board)
 
 class Groups:
     def __init__(self):
         # Holds the index of the group in the other lists
         # By stone idx
         self.groupByIdx = np.zeros((BoardSizeP))
-        # Holds the idx of the next stone in the group
-        self.nextStone = np.zeros((BoardSizeP))
-        #
+        # Info about groups, indexed by the groupId (first stone in group's index)
         self.groups = np.ndarray((BoardSizeP), dtype=Group)
 
-    def mergeGroups(self, board, move):
+    def mergeGroups(self, board, move, gidTo, gidFrom):
         return
 
-    def addToGroup(self, board, move):
-        # TODO: Check for group merge
+    def addToGroup(self, board, move, nIdx, neighIdxs):
+        
+        gid = self.groupByIdx[nIdx]
+
+        for n in neighIdxs:
+            nGid = self.groupByIdx[n] 
+            if board.at(n) == move.color and nGid != 0 and nGid != gid:
+                mergeGroups(board, move, gid, nGid)
+                return
+              
+        group = self.groupByIdx[gid]
+        self.groupByIdx[move.pIdx] = gid
+        group.addStone(board, move.pIdx, neighIdxs)
+
         return
 
     def newGroup(self, board, move, neighIdxs):
         gid = move.pIdx
-        self.groupByIdx[gid] = move.pIdx
+        self.groupByIdx[gid] = gid
         self.groups[gid] = Group()
-        group = self.groups[gid]
-
-        for n in neighIdxs:
-            if board.at(n) == EMPTY:
-                group.addLib(n)
-
-        self.nextStone[gid] = 0
+        self.groups[gid].addStone(board, gid, neighIdxs)
 
     def doMove(self, board, move):
         neighIdxs = board.getNeighs(move.pIdx)
+
+        # Remove libs from surrounding groups
+        for n in neighIdxs:
+            nGid = self.groupByIdx[n]
+            if nGid:
+                group = self.groups[nGid]
+                group.removeLib(board, move.pIdx)
 
         needNewGroup = True
         for n in neighIdxs:
             if board.at(n) == move.color:
                 # Found a neighbor of our color, add this stone to that group
-                addToGroup(board, move)
+                addToGroup(board, move, n, neighIdxs)
                 needNewGroup = False
                 break
 
         # No neighbors of this stones color around
         if needNewGroup:
             self.newGroup(board, move, neighIdxs)
+            
+        # TODO: Look at neighbors for captures (or suicides)
 
         return
 
@@ -101,6 +145,9 @@ class Board:
     def makeMove(self, m, col):
         self.board[self.ColorLayer, m.pX, m.pY] = col
         self.groups.doMove(self, m)
+        printBoard(self)
+        printGroups(self)
+
 
     def at(self, pidx):
         x, y = pidxToXy(pidx)
