@@ -29,4 +29,11 @@ class Move:
     def paddedMoveIdx(self):
         self.pX = self.x + 1
         self.pY = self.y + 1
-        return self.pX * BoardLengthP + self.pY  
+        return self.pX * BoardLengthP + self.pY 
+    
+
+def flipCol(col):
+    if col == BLACK:
+        return WHITE
+    return BLACK
+

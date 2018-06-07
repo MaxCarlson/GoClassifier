@@ -3,18 +3,13 @@ from Globals import BoardLength, BoardSize, BoardDepth, BoardLengthP, BoardSizeP
 from Globals import EMPTY, BLACK, WHITE, OFF_BOARD
 
 from Board import Board
-from Move import Move, moveToIdx
+from Move import Move, moveToIdx, flipCol
 
 
 def emptyOrFriendly(col, other):
     if other == EMPTY or other == col:
         return True
     return False
-
-def flipCol(col):
-    if col == BLACK:
-        return WHITE
-    return BLACK
 
 def flipColForWr(val, col):
     if col == EMPTY or col == BLACK:

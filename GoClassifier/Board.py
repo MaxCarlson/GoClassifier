@@ -1,11 +1,11 @@
 import numpy as np
 from Globals import BoardDepth, BoardLength, BoardSize, BoardLengthP, BoardSizeP
 from Globals import EMPTY, BLACK, WHITE, OFF_BOARD
-from Move import Move
+from Move import Move, flipCol
 
 def pidxToXy(idx):
-    x = idx % BoardLengthP
-    y = idx // BoardLengthP
+    x = idx // BoardLengthP
+    y = idx % BoardLengthP
     return x, y
 
 GROUP_MAX_LIBS = 7
@@ -30,49 +30,45 @@ class Group:
         # Liberty count
         self.libs = 0
         # List of liberty locations (only keep track of a few)
-        self.lib = np.zeros((GROUP_MAX_LIBS))
+        self.lib = set()
 
     def addLib(self, idx):
         if self.libs == GROUP_MAX_LIBS:
             return
-        self.lib[self.libs] = idx
+        self.lib.add(idx)
         self.libs += 1
 
         if self.libs > 4 and len(self.stones) <= 1:
             a = 5
 
     def refillLibs(self, board):
-
-        llibs = set(self.lib)
+        
         for s in self.stones:
             neighs = board.getNeighs(s)
             for n in neighs:
                 r = board.at(n)
-                if board.at(n) != EMPTY or n in llibs:
+                if board.at(n) != EMPTY or n in lib:
                     continue
-                llibs.add(n)
                 self.addLib(n)
+
 
     def addStone(self, board, idx, neighIdxs):
         self.stones.append(idx)
-   
+
         for n in neighIdxs:
             if board.at(n) == EMPTY:
                 self.addLib(n)
 
     def removeLib(self, board, idx):
-        
-        for i in range(0,self.libs):
-            if self.lib[i] == idx:
-                self.libs -= 1
-                self.lib[i] = self.lib[self.libs]
-                break
+        # Remove a liberty and look for others if we're low
+        if idx in self.lib:
+            self.libs -= 1
+            self.lib.remove(idx)
 
         if self.libs < GROUP_REFILL_LIBS:
             self.refillLibs(board)
 
     def mergeGroup(self, board, ourGid, otherGroup, groupsByIdx):
-
         # Set the other groups stones to our group 
         # and add them to our list of stones
         for stone in otherGroup.stones:
@@ -125,8 +121,10 @@ class Groups:
     def doMove(self, board, move):
         neighIdxs = board.getNeighs(move.pIdx)
 
+        # There's an issue with indexing? Figure out what's up!!!
         if move.pIdx == 310 or move.pIdx == 331:
-             a =5
+             printBoard(board)
+             printGroups(board)
 
         # Remove libs from surrounding groups
         for n in neighIdxs:
@@ -148,8 +146,57 @@ class Groups:
             self.newGroup(board, move, neighIdxs)
             
         # TODO: Look at neighbors for captures (or suicides)
-
         return
+
+def findLiberties(board, searched, color, idx):
+    neighs = board.getNeighs(idx)
+
+    libs = 0
+    for n in neighs:
+        at = board.at(n)
+        if at == EMPTY:
+            return 1
+            
+        elif n in searched or at != color:
+            continue
+
+        searched.add(n)
+        libs += findLiberties(searched, n)
+
+        if libs:
+            return libs
+
+    return libs
+
+
+def caputureStones(board, searched):
+    return
+
+def findCapturedStones(board, move):
+
+    neighs = board.getNeighs(move.pIdx)
+    searched = set()
+
+    opponent = flipCol(move.color)
+
+    # Look at opponent stones to possibly capture
+    cap = False
+    for n in neighs:
+        if board.at(n) != opponent:
+            continue
+        neighSearched = set()
+        nLibs = findLiberties(board, neighSearched, opponent, n)
+        if nLibs <= 0:
+            caputureStones(board, neighSearched)
+            cap = True
+    
+    if cap:
+        return
+
+    # Look for the unlikely case of a suicide!
+    ourLibs = findLiberties(board, searched, move.color, move.pIdx)
+    
+    
 
 class Board:
     # Final output layer #'s
@@ -178,6 +225,8 @@ class Board:
         self.groups = Groups()
 
     def makeMove(self, m, col):
+        printBoard(self)
+        printGroups(self)
         self.board[self.ColorLayer, m.pX, m.pY] = col
         self.groups.doMove(self, m)
         printBoard(self)
