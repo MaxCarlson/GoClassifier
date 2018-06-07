@@ -13,7 +13,20 @@ GROUP_REFILL_LIBS = 5
 
 def printBoard(board):
     print('\n')
-    print(board.board)
+   # print(board.board)
+
+    for i in range(0,BoardLengthP):
+        for j in range(0,BoardLengthP):
+            ch = ' . '
+            at = board.board[board.ColorLayer, i, j]
+            if at == BLACK:
+                ch = ' B '
+            elif at == WHITE:
+                ch = ' W '
+            print(ch, end='')
+           
+        print()
+
     print('\n')
 
 def printGroups(board):
@@ -161,7 +174,7 @@ def findLiberties(board, searched, color, idx):
             continue
 
         searched.add(n)
-        libs += findLiberties(searched, n)
+        libs += findLiberties(board, searched, color, n)
 
         if libs:
             return libs
@@ -170,31 +183,41 @@ def findLiberties(board, searched, color, idx):
 
 
 def caputureStones(board, searched):
-    return
+    for st in searched:
+        x, y  = pidxToXy(st)
+        board.board[board.StoneLayer, x, y] = EMPTY
+
+index = 0
 
 def findCapturedStones(board, move):
 
-    neighs = board.getNeighs(move.pIdx)
     searched = set()
-
     opponent = flipCol(move.color)
+    neighs = board.getNeighs(move.pIdx)
 
     # Look at opponent stones to possibly capture
     cap = False
     for n in neighs:
         if board.at(n) != opponent:
             continue
-        neighSearched = set()
-        nLibs = findLiberties(board, neighSearched, opponent, n)
+
+        searched.clear()
+        searched.add(n)
+        nLibs = findLiberties(board, searched, opponent, n)
         if nLibs <= 0:
-            caputureStones(board, neighSearched)
+            caputureStones(board, searched)
             cap = True
     
     if cap:
         return
 
+    searched.clear()
+    searched.add(move.pIdx)
     # Look for the unlikely case of a suicide!
     ourLibs = findLiberties(board, searched, move.color, move.pIdx)
+
+    if ourLibs <= 0:
+        caputureStones(board, searched)
     
     
 
@@ -225,12 +248,13 @@ class Board:
         self.groups = Groups()
 
     def makeMove(self, m, col):
-        printBoard(self)
-        printGroups(self)
+        #printBoard(self)
+        #printGroups(self)
         self.board[self.ColorLayer, m.pX, m.pY] = col
-        self.groups.doMove(self, m)
-        printBoard(self)
-        printGroups(self)
+        #self.groups.doMove(self, m)
+        findCapturedStones(self, m)
+       # printBoard(self)
+        #printGroups(self)
 
 
     def at(self, pidx):
