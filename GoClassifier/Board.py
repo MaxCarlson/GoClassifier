@@ -13,7 +13,6 @@ GROUP_REFILL_LIBS = 5
 
 def printBoard(board):
     print('\n')
-   # print(board.board)
 
     for i in range(0,BoardLengthP):
         for j in range(0,BoardLengthP):
@@ -241,21 +240,24 @@ class Board:
     # Black libs
     # White libs
 
+    prevIt = 0
+    PreviousStates = 1
+
     def __init__(self):
         self.board = np.zeros((self.internalDepth, BoardLengthP, BoardLengthP))
+        self.prev = np.zeros((self.PreviousStates, BoardLengthP, BoardLengthP))
         self.board.fill(OFF_BOARD)
         self.board[0:self.internalDepth, 1:BoardLength+1, 1:BoardLength+1] = EMPTY
         self.groups = Groups()
 
     def makeMove(self, m, col):
+
+        self.writeToPrev()
+        self.board[self.ColorLayer, m.pX, m.pY] = col
+        findCapturedStones(self, m)
+        #self.groups.doMove(self, m)
         #printBoard(self)
         #printGroups(self)
-        self.board[self.ColorLayer, m.pX, m.pY] = col
-        #self.groups.doMove(self, m)
-        findCapturedStones(self, m)
-       # printBoard(self)
-        #printGroups(self)
-
 
     def at(self, pidx):
         x, y = pidxToXy(pidx)
@@ -272,18 +274,56 @@ class Board:
 
     # Reshape to a square board
     # Slice off the extra sides we don't want
-    def returnRealBoard(self):
-        return self.board[0:self.internalDepth, 1:BoardLength+1, 1:BoardLength+1]
+    def returnRealBoard(self, board):
+        return board[0:self.internalDepth, 1:BoardLength+1, 1:BoardLength+1]
+
+    def prevOrder(self):
+        order = []
+        it = self.prevIt
+        for i in range(0, self.PreviousStates):
+            order.append(it)
+            it += 1
+            if it >= self.PreviousStates:
+                it = 0
+        return order
+
+    # Write previous board state into memory and
+    # increase the previous iterator (Which tells us where to write and how to look at the data)
+    def writeToPrev(self):
+        self.prev[self.prevIt] = self.board
+        self.prevIt += 1
+        if self.prevIt >= self.PreviousStates:
+            self.prevIt = 0
+
+    def getPrevious(self):
+        prevs = np.zeros((self.PreviousStates, BoardLength, BoardLength))
+        order = self.prevOrder()
+        # Get the previous board states in the right order
+        i = 0
+        for o in order:
+            prevs[i] = self.prev[order[i]][1:BoardLength+1, 1:BoardLength+1]
+        return prevs
+
 
     # Convert to binary encoded feature map
     def convertToFeatureMap(self, color):
-        rb = self.returnRealBoard()
+        latestBoard = self.returnRealBoard(self.board)
+        prevs = self.getPrevious()
+
+        boards = np.concatenate([latestBoard, prevs])
+
         ftMap = np.zeros((BoardDepth, BoardLength, BoardLength))
         # Add feature side to move
         ftMap[self.ColorLayer] = 1 if color == BLACK else 0
 
         # Add both layers representing player and opponent stones
         opponent = WHITE if color == BLACK else BLACK
-        ftMap[self.PlayerLayer] = rb[self.StoneLayer] == color
-        ftMap[self.OpponentLayer] = rb[self.StoneLayer] == opponent
+
+        index = 0
+        for i in range(1, BoardDepth, 2):
+            ftMap[i]   = boards[index] == color
+            ftMap[i+1] = boards[index] == opponent
+            index += 1
+
+
         return ftMap

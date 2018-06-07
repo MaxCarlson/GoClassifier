@@ -18,7 +18,7 @@ from CurateData import curateData
 
 # Uncomment this if you want to curate data from the 
 # Professional dataset https://github.com/yenw/computer-go-dataset#1-tygem-dataset
-curateData()
+#curateData()
 
 sess = tf.Session()
 K.set_session(sess)
@@ -53,9 +53,9 @@ batchSize = 512
 numEpochs = 250
 hiddenSize = 32
 
-trainFiles = (1, 70)
+trainFiles = (1, 30)
 gen = Generator(featurePath, labelPath, trainFiles, batchSize)
-valFiles = (72, 73)
+valFiles = (32, 33)
 valGen = Generator(featurePath, labelPath, valFiles, batchSize)
 
 filters = 64
