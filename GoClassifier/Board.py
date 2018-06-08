@@ -1,23 +1,15 @@
 import numpy as np
 from Globals import BoardDepth, BoardLength, BoardSize, BoardLengthP, BoardSizeP
 from Globals import EMPTY, BLACK, WHITE, OFF_BOARD
-from Move import Move, flipCol
-
-def pidxToXy(idx):
-    x = idx  % BoardLengthP
-    y = idx // BoardLengthP
-    return x, y
-
-GROUP_MAX_LIBS = 7
-GROUP_REFILL_LIBS = 5
+from Move import Move, flipCol, pidxToXy
 
 def printBoard(board):
     print('\n')
 
-    for i in range(0,BoardLengthP):
-        for j in range(0,BoardLengthP):
+    for y in range(0,BoardLengthP):
+        for x in range(0,BoardLengthP):
             ch = ' . '
-            at = board.board[board.ColorLayer, j, i]
+            at = board.board[board.ColorLayer, x, y]
             if at == BLACK:
                 ch = ' B '
             elif at == WHITE:
@@ -119,7 +111,7 @@ class Board:
         self.writeToPrev()
         self.board[self.ColorLayer, m.pX, m.pY] = col
         findCapturedStones(self, m)
-        #printBoard(self)
+        printBoard(self)
 
     def at(self, pidx):
         x, y = pidxToXy(pidx)

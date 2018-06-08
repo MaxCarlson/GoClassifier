@@ -3,7 +3,18 @@ from Globals import BoardDepth, BoardLength, BoardSize, BoardLengthP, BoardSizeP
 from Globals import EMPTY, BLACK, WHITE, OFF_BOARD
 
 def moveToIdx(x, y):
-    return x * BoardLength + y
+    return y * BoardLength + x
+
+def pidxToXy(idx):
+    x = idx % BoardLengthP
+    y = idx // BoardLengthP
+    return x, y
+
+def flipCol(col):
+    if col == BLACK:
+        return WHITE
+    return BLACK
+
 
 class Move:
     def __init__(self, str):
@@ -24,16 +35,11 @@ class Move:
         y = ord(m[3])
         self.x = x - ord('a')
         self.y = y - ord('a')
+
         return moveToIdx(self.x, self.y)
 
     def paddedMoveIdx(self):
         self.pX = self.x + 1
         self.pY = self.y + 1
-        return self.pX * BoardLengthP + self.pY 
-    
-
-def flipCol(col):
-    if col == BLACK:
-        return WHITE
-    return BLACK
+        return self.pY * BoardLengthP + self.pX
 

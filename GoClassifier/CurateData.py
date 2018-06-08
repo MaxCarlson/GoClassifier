@@ -5,17 +5,7 @@ from Globals import EMPTY, BLACK, WHITE, OFF_BOARD
 from Board import Board
 from Move import Move, moveToIdx, flipCol
 
-
-def emptyOrFriendly(col, other):
-    if other == EMPTY or other == col:
-        return True
-    return False
-
-def flipColForWr(val, col):
-    if col == EMPTY or col == BLACK:
-        return val
-    return flipCol(val)   
-
+# Store gamestates + moves before we write them to disk
 class Storage:
     fileCount = 0
     strgIdx = 0
