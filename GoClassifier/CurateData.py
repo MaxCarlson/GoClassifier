@@ -19,11 +19,9 @@ def flipColForWr(val, col):
 class Storage:
     fileCount = 0
     strgIdx = 0
+    # Number of planes of the feature map that are written to disk
+    SaveDepth = 3
     maxMovePerFile = 10000
-    # TODO: figure out an easy way to save in the format we need ? [samples, 1, BoardLength, BoardLength] + y Data
-    # Probably best way would be to save features in one file and labels in another 
-    # (So we can save features as they are read in the model)
-    #storage = np.zeros((maxMovePerFile, BoardSize+1))
 
     def __init__(self, outfileName, maxMovesPerFile):
         self.outfileName = outfileName
@@ -31,12 +29,12 @@ class Storage:
         self.storage, self.yStorage = self.zeroBoard()
 
     def zeroBoard(self):
-        self.storage = np.zeros((self.maxMovePerFile, BoardDepth, BoardLength, BoardLength))
+        self.storage = np.zeros((self.maxMovePerFile, self.SaveDepth, BoardLength, BoardLength))
         self.yStorage = np.zeros((self.maxMovePerFile, 2))
         return self.storage, self.yStorage
 
     def asignBoard(self, board, move):
-        self.storage[self.strgIdx] = board.convertToFeatureMap(move.color)
+        self.storage[self.strgIdx] = board.combineStates(move.color)
         self.yStorage[self.strgIdx] = [move.idx, move.color] 
         self.strgIdx += 1
 
@@ -106,7 +104,8 @@ def processGame(line, storage):
     while i < len(line):
         mv = line[i-1:i+5]
 
-        # Ignore games with passes in them for the moment!
+        # Skip all moves in a game after passes 
+        # ( Since passes aren't a move in the model yet )
         if mv[2] == ']':
             break
 

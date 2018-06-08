@@ -18,7 +18,7 @@ from CurateData import curateData
 
 # Uncomment this if you want to curate data from the 
 # Professional dataset https://github.com/yenw/computer-go-dataset#1-tygem-dataset
-#curateData()
+curateData()
 
 sess = tf.Session()
 K.set_session(sess)
