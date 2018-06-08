@@ -4,31 +4,7 @@ import random
 import numpy as np
 import tensorflow as tf
 from Globals import BoardSize, BoardLength, BoardDepth, BLACK, WHITE
-
-import multiprocessing, threading, queue
-
-class threadsafe_iter:
-    """Takes an iterator/generator and makes it thread-safe by
-    serializing call to the `next` method of given iterator/generator.
-    """
-    def __init__(self, it):
-        self.it = it
-        self.lock = threading.Lock()
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        with self.lock:
-            return self.it.__next__()
-
-
-def threadsafe_generator(f):
-    """A decorator that takes a generator function and makes it thread-safe.
-    """
-    def g(*a, **kw):
-        return threadsafe_iter(f(*a, **kw))
-    return g
+#import multiprocessing, threading, queue
 
 class Generator():
     def __init__(self, featurePath, labelPath, fileShape, batchSize):
@@ -77,7 +53,7 @@ class Generator():
     def fillQueue(self, q, inidicies, i):
         return
 
-    def loadFile(self, fList, lList, indicies, i):
+    def loadFile(self, fList, lList, indices, i):
         sampleF = fList[indices[i]]
         sampleL = lList[indices[i]]
         
@@ -85,35 +61,14 @@ class Generator():
         wholePathL = self.labelPath + '/' + sampleL
 
         XX, YY = self.extractNpy(wholePathF, wholePathL)
-        X = np.zeros((self.batchSize, BoardDepth, BoardLength, BoardLength))
-        Y = np.zeros((self.batchSize, BoardSize))
-        return X, Y
+        return XX, YY
 
-    # Continuously read and generate data for the model
-    # As it likely can't fit in memory
-    def generator(self):
-    
-        fList = self.shapeFileList(os.listdir(self.featurePath))
-        lList = self.shapeFileList(os.listdir(self.labelPath))
-
-        indices = np.arange(0, len(fList))
-
-        featQ = queue()
-
-        i = 0
-        while True:
-            if i >= len(fList):
-                i = 0
-                random.shuffle(indices)
-
-            #thread.start_new_thread(fillQueue, (featQ, indices, i))
-
-            XX, YY = self.loadFile(fList, lList, indices, i)
-
-            # Roll for a random spot to start the batch range slice
-            m = np.shape(XX)[0] 
-            roll = random.randint(0, m - 1)
-
+    # Grab the next chunk of the file
+    def getNextChunk(self, XX, YY, m, roll):
+            
+            X = np.zeros((self.batchSize, BoardDepth, BoardLength, BoardLength))
+            Y = np.zeros((self.batchSize, BoardSize))
+            
             if roll + self.batchSize < m:
                 X = XX[roll:roll + self.batchSize]
                 Y = YY[roll:roll + self.batchSize]
@@ -127,7 +82,7 @@ class Generator():
                     Y[b] = YY[roll]
 
             else:
-                # If it's not a good fit, take the upper slice then the lower one
+                # If it's not a perfect fit, take the upper slice then the lower one
                 m1 = np.shape(XX[roll:m])[0]
                 m2 = self.batchSize - m1
                 X[0:m1] = XX[roll:m]
@@ -135,8 +90,54 @@ class Generator():
                 X[m1:self.batchSize] = XX[0:m2]
                 Y[m1:self.batchSize] = YY[0:m2]
 
+            roll += self.batchSize
+            if roll > m:
+                roll -= m
+
+            return X, Y, roll
+
+    # Continuously read and generate data for the model
+    # As it likely can't fit in memory
+    def generator(self):
+    
+        fList = self.shapeFileList(os.listdir(self.featurePath))
+        lList = self.shapeFileList(os.listdir(self.labelPath))
+
+        indices = np.arange(0, len(fList))
+
+        #featQ = queue()
+        #thread.start_new_thread(fillQueue, (featQ, indices, i))
+
+        i = 0
+        m = 0
+        mi = 0
+        roll = 0
+        XX, YY = np.zeros(1), np.zeros(1)
+        loadNew = True
+        # Number of mini-batches we can read from a file
+        fileLoadsPb = -1
+        while True:
+            if mi >= fileLoadsPb:
+                if i >= len(fList):
+                    i = 0
+                    random.shuffle(indices)
+                
+                # Load a new file
+                mi = 0
+                XX, YY = self.loadFile(fList, lList, indices, i)
+                m = np.shape(YY)[0]
+                fileLoadsPb = m // self.batchSize
+                # Roll for a random spot to start the batch range slice
+                roll = random.randint(0, m - 1)
+
+
+            X, Y, roll = self.getNextChunk(XX, YY, m, roll)
+
             yield X, Y
-            i += 1
+
+            mi += 1
+            if mi >= fileLoadsPb:
+                i += 1
 
     # Count the number of samples for each file we're using
     def stepsPerEpoch(self):
