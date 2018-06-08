@@ -32,12 +32,12 @@ class Storage:
 
     def zeroBoard(self):
         self.storage = np.zeros((self.maxMovePerFile, BoardDepth, BoardLength, BoardLength))
-        self.yStorage = np.zeros((self.maxMovePerFile))
+        self.yStorage = np.zeros((self.maxMovePerFile, 2))
         return self.storage, self.yStorage
 
     def asignBoard(self, board, move):
         self.storage[self.strgIdx] = board.convertToFeatureMap(move.color)
-        self.yStorage[self.strgIdx] = move.idx 
+        self.yStorage[self.strgIdx] = [move.idx, move.color] 
         self.strgIdx += 1
 
     def nextFile(self):
@@ -57,8 +57,8 @@ class Storage:
             self.storage = self.storage[0:self.strgIdx]
             self.yStorage = self.yStorage[0:self.strgIdx]
 
-        # Shuffle the results so we don't have large chunks of games
-        # next to eachtoher
+        # Shuffle the results so we don't have large 
+        # chunks of the same game next to eachtoher
         state = np.random.get_state()
         np.random.shuffle(self.storage)
         np.random.set_state(state)

@@ -312,6 +312,10 @@ class Board:
 
         boards = np.concatenate([latestBoard, prevs])
 
+        # Testing whether it's faster to do the code below later
+        # as opposed to reading large files from the disk
+        return boards
+
         ftMap = np.zeros((BoardDepth, BoardLength, BoardLength))
         # Add feature side to move
         ftMap[self.ColorLayer] = 1 if color == BLACK else 0
