@@ -134,12 +134,15 @@ class Board:
 
     def prevOrder(self):
         order = []
-        it = self.prevIt
+        it = self.prevIt - 1
+
+        it = self.PreviousStates - 1 if it < 0 else it
+
         for i in range(0, self.PreviousStates):
             order.append(it)
-            it += 1
-            if it >= self.PreviousStates:
-                it = 0
+            it -= 1
+            if it < 0:
+                it = self.PreviousStates - 1
         return order
 
     # Write previous board state into memory and
