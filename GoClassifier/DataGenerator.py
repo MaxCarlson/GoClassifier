@@ -50,9 +50,6 @@ class Generator():
         return fileList[self.fileShape[0]:self.fileShape[1]]
 
 
-    def fillQueue(self, q, inidicies, i):
-        return
-
     def loadFile(self, fList, lList, indices, i):
         sampleF = fList[indices[i]]
         sampleL = lList[indices[i]]

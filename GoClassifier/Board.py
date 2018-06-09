@@ -111,7 +111,7 @@ class Board:
         self.writeToPrev()
         self.board[self.ColorLayer, m.pX, m.pY] = col
         findCapturedStones(self, m)
-        printBoard(self)
+        #printBoard(self)
 
     def at(self, pidx):
         x, y = pidxToXy(pidx)
