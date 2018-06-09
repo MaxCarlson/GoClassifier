@@ -97,6 +97,7 @@ class Board:
     # White libs
 
     # Number of previous board states to save
+    # This doesn't count the current state
     PreviousStates = 2
     # iterator for those prev states
     prevIt = 0
@@ -127,7 +128,7 @@ class Board:
         return neighs
 
     # Reshape to a square board
-    # Slice off the extra sides we don't want
+    # Slice off the extra padding we don't want
     def returnRealBoard(self, board):
         return board[0:self.internalDepth, 1:BoardLength+1, 1:BoardLength+1]
 
@@ -156,15 +157,12 @@ class Board:
         # Get the previous board states in the right order
         i = 0
         for o in order:
-            prevs[i] = self.prev[order[i]][1:BoardLength+1, 1:BoardLength+1]
+            prevs[i] = self.prev[o][1:BoardLength+1, 1:BoardLength+1]
+            i += 1
+
         return prevs
 
-
     # Get the current board state, as well as all the rest that
-    # we're going to write to disk
+    # we're going to write to disk and combine them!
     def combineStates(self, color):
-        latestBoard = self.returnRealBoard(self.board)
-        prevs = self.getPrevious()
-
-        boards = np.concatenate([latestBoard, prevs])
-        return boards
+        return np.concatenate([self.returnRealBoard(self.board), self.getPrevious()])

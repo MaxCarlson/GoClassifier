@@ -10,7 +10,7 @@ class Storage:
     fileCount = 0
     strgIdx = 0
     # Number of planes of the feature map that are written to disk
-    SaveDepth = 3
+    SaveDepth = (BoardDepth - 1) // 2
     maxMovePerFile = 10000
 
     def __init__(self, outfileName, maxMovesPerFile):
