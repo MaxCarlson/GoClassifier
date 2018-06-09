@@ -19,6 +19,8 @@ class Generator():
         for i in range(0, m):
             X[i, 0] = C[i] - 1
 
+    # Read the data from the file created in CurateData
+    # Format it into the binary feature map explained in CurateData
     def extractNpy(self, xFile, yFile):
         XComp = np.load(xFile)
         YCol  = np.load(yFile)

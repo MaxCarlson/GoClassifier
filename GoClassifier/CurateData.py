@@ -106,20 +106,33 @@ def processGame(line, storage):
         col = flipCol(col)
         i += 6
 
-# TODO: Implement Alpha go encoding
-# OR something more complete than 1d plane
-#              # of layers dedicated to
-# Stone Color  3
-# Ones         1
-# Turns Since  8
-# Liberties    8
-# Cap Size     8
-# Slf-Atari    8
-# Lib after Mv 8
-# Ladder Cap   1
-# Sensible     1
-# Zeros        1
-# Player Color 1
+# Current format of output 
+#
+# Numpy Feature array:
+# [MaxMovesPerFile, BoardLayers, BoardLength, BoardLength]
+#
+# state = Board state before move 
+# BoardLayers = [state, state - 1, state - 2]
+#
+# Numpy Label array:
+# [MoveIndex, color]
+# MoveIndex = my * BoardLength + mx
+#
+# This is similar to, but different, from the
+# format that is fed to the model. That format is:
+#
+# [MovesPerBatch, BoardLayers * 2 + 1, BoardLength, BoardLength]
+# BoardLayers = [BinaryColorLayer, Binary1stStateBlack, Binary1stStateWhite, ..., BinaryNthStateWhite]
+#
+# BinaryColorLayer = all 1's for black all 0's for white
+# BinaryNthStateColor = a binary layer with only color stones or not color stones (ones where stones
+# of that color are, 0's everywhere else)
+#
+#
+# Misc
+# Data is randomized when written to disk,
+# but only within the bounds of the movesPerFile
+
 def curateData():
 
     movesPerFile = 10000
