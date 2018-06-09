@@ -65,7 +65,7 @@ class Generator():
     # Grab the next chunk of the file
     def getNextChunk(self, XX, YY, m, roll):
             
-            X = np.zeros((self.batchSize, BoardDepth, BoardLength, BoardLength))
+            X = np.zeros((self.batchSize, BoardDepth, BoardLength, BoardLength)) # TODO: , dtype=bool
             Y = np.zeros((self.batchSize, BoardSize))
             
             if roll + self.batchSize < m:

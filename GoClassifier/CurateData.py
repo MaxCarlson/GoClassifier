@@ -19,8 +19,8 @@ class Storage:
         self.storage, self.yStorage = self.zeroBoard()
 
     def zeroBoard(self):
-        self.storage = np.zeros((self.maxMovePerFile, self.SaveDepth, BoardLength, BoardLength))
-        self.yStorage = np.zeros((self.maxMovePerFile, 2))
+        self.storage = np.zeros((self.maxMovePerFile, self.SaveDepth, BoardLength, BoardLength), dtype=np.int8)
+        self.yStorage = np.zeros((self.maxMovePerFile, 2), dtype=int)
         return self.storage, self.yStorage
 
     def asignBoard(self, board, move):

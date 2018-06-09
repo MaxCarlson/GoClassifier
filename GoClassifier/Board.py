@@ -103,8 +103,8 @@ class Board:
     prevIt = 0
 
     def __init__(self):
-        self.board = np.zeros((self.internalDepth, BoardLengthP, BoardLengthP))
-        self.prev = np.zeros((self.PreviousStates, BoardLengthP, BoardLengthP))
+        self.board = np.zeros((self.internalDepth, BoardLengthP, BoardLengthP), dtype=np.int8)
+        self.prev = np.zeros((self.PreviousStates, BoardLengthP, BoardLengthP), dtype=np.int8)
         self.board.fill(OFF_BOARD)
         self.board[0:self.internalDepth, 1:BoardLength+1, 1:BoardLength+1] = EMPTY
 
