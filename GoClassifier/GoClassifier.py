@@ -18,7 +18,7 @@ from CurateData import curateData
 
 # Uncomment this if you want to curate data from the 
 # Professional dataset https://github.com/yenw/computer-go-dataset#1-tygem-dataset
-curateData()
+#curateData()
 
 sess = tf.Session()
 K.set_session(sess)
@@ -108,7 +108,7 @@ optimizer = tf.train.AdamOptimizer(learning_rate=0.0018)
 
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy']) # Look into using to_catagorical on outputs instead of generating huge arrays of data
 
-earlyExit = keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0, patience=4)
+earlyExit = keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0, patience=1)
 
 #history = model.fit(X, Y, validation_data=(Xt, Yt), batch_size=batchSize, epochs=numEpochs, verbose=2, callbacks=[earlyExit])
 
@@ -120,6 +120,11 @@ history = model.fit_generator(generator=gen.generator(),
                     verbose=2, workers=1, callbacks=[earlyExit])
 
 plotHistory(history)
+
+#K.set_learning_phase(0)
+
+saver = tf.train.Saver()
+saver.save(K.get_session(), 'models/latestModel')
 
 #model.save('LatestModel')
 #
