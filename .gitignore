@@ -262,3 +262,4 @@ __pycache__/
 *.csv
 *.npy
 /GoClassifier/outData/pro2000+.txt
+/GoClassifier/models/test
