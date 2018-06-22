@@ -24,6 +24,7 @@ from CurateData import curateData
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
+
 sess = tf.Session(config=config)
 K.set_session(sess)
 sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
@@ -47,7 +48,17 @@ def plotHistory(history):
     plt.legend(['train', 'test'], loc='upper left')
     plt.show()
 
-WeightPath = "Weights.h5"
+# Look at output of model for all zeros/ones
+# (useful for debugging the C++ model loading)
+def printModelPreds(model):
+    test = np.zeros((1, BoardDepth, BoardLength, BoardLength))
+    preds = model.predict(test, 1, 2)
+    print(preds)
+
+    test = np.ones((1, BoardDepth, BoardLength, BoardLength))
+    preds = model.predict(test, 1, 2)
+    print(preds)
+
 featurePath = 'data/features'
 labelPath = 'data/labels'
 
@@ -56,7 +67,7 @@ numEpochs = 2
 
 # Use our generator to load data from files
 # that would be too large to fit into memory
-trainFiles = (1, 5)
+trainFiles = (1, 2)
 gen = Generator(featurePath, labelPath, trainFiles, batchSize)
 valFiles = (71, 72)
 valGen = Generator(featurePath, labelPath, valFiles, batchSize)
@@ -106,6 +117,8 @@ model = tf.keras.Sequential([
 
 model.summary()
 
+printModelPreds(model)
+
 # Find naming scheme
 #img = tf.placeholder(tf.float32, shape=(1, BoardDepth, BoardLength, BoardLength), name='tmpInput')
 #M = model(img)
@@ -120,6 +133,8 @@ model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['ac
 # Exit training if validation accuracy 
 # starts declining
 earlyExit = keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0, patience=0)
+#checkpoints = keras.callbacks.ModelCheckpoint('./models/weights', monitor='val_loss', verbose=0, save_best_only=False)
+
 
 # Train the model
 history = model.fit_generator(generator=gen.generator(),
@@ -129,18 +144,46 @@ history = model.fit_generator(generator=gen.generator(),
                     epochs=numEpochs, 
                     verbose=2, workers=1, callbacks=[earlyExit])
 
-plotHistory(history)
+printModelPreds(model)
 
-# Look at output of model for all zeros 
-# (useful for debugging the C++ model loading)
-test = np.zeros((1, BoardDepth, BoardLength, BoardLength))
-preds = model.predict(test, 1, 2)
-print(preds)
+
+plotHistory(history)
 
 # Save the model
 K.set_learning_phase(0)
-with tf.Session() as sess:
+with K.get_session() as sess:
     sess.run(tf.global_variables_initializer())
-    saver = tf.train.Saver(tf.global_variables())
+    saver = tf.train.Saver(tf.global_variables(), write_version=tf.train.SaverDef.V2)
     saver.save(sess, './models/latestModel')
-    tf.train.write_graph(sess.graph, '.', './models/graph.pb', as_text=False)
+    tf.train.write_graph(sess.graph.as_graph_def(), '.', './models/graph.pb', as_text=True)
+
+
+
+
+
+with K.get_session() as sess:
+    saver = tf.train.import_meta_graph('./models/latestModel.meta')
+    saver.restore(sess, tf.train.latest_checkpoint('models/'))
+    outputTensors = sess.run()
+
+
+""" Can't get this method to work
+  
+    inputTensInfo = tf.saved_model.utils.build_tensor_info(model.input())
+    outputTensInfo = tf.saved_model.utils.build_tensor_info(model.output())
+
+    signature = tf.saved_model.signature_def_utils.predict_signature_def(
+        inputs={'images': inputTensInfo }, 
+        outputs={'scores': outputTensInfo },
+        method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME
+    )
+
+    builder = tf.saved_model.builder.SavedModelBuilder('./models/test/latestModel')
+    builder.add_meta_graph_and_variables(
+        sess=sess, tags=[tf.saved_model.tag_constants.SERVING],                                                                                             
+        signature_def_map={                                                                                                       
+            tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:                                                                
+                signature   
+    })
+    builder.save()
+"""
