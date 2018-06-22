@@ -145,27 +145,45 @@ history = model.fit_generator(generator=gen.generator(),
                     verbose=2, workers=1, callbacks=[earlyExit])
 
 printModelPreds(model)
+#plotHistory(history)
+
+def saveModel(sess, model):
+    sup = sess.run(tf.global_variables_initializer())
+
+    printModelPreds(model)
+
+    saver = tf.train.Saver(tf.global_variables())
+    sup = saver.save(sess, './models/latestModel')
+
+    # Useful for debugging purposes
+    tf.train.write_graph(sess.graph, '.', './models/graph.pb', as_text=True)
+
+    printModelPreds(model)
+
+saveModel(sess, model)
 
 
-plotHistory(history)
-
+# This seems to reset session. If we run the model in here
+# it's reset to it's pre-trained state
+#
 # Save the model
-K.set_learning_phase(0)
+#K.set_learning_phase(0)
 with K.get_session() as sess:
     sess.run(tf.global_variables_initializer())
-    saver = tf.train.Saver(tf.global_variables(), write_version=tf.train.SaverDef.V2)
+
+    test = np.zeros((1, BoardDepth, BoardLength, BoardLength))
+    preds = model.predict(test, 1, 2)
+    print(preds)
+
+    test = np.ones((1, BoardDepth, BoardLength, BoardLength))
+    preds = model.predict(test, 1, 2)
+    print(preds)
+
+    saver = tf.train.Saver()
     saver.save(sess, './models/latestModel')
-    tf.train.write_graph(sess.graph.as_graph_def(), '.', './models/graph.pb', as_text=True)
 
-
-
-
-
-with K.get_session() as sess:
-    saver = tf.train.import_meta_graph('./models/latestModel.meta')
-    saver.restore(sess, tf.train.latest_checkpoint('models/'))
-    outputTensors = sess.run()
-
+    # Useful for debugging purposes
+    tf.train.write_graph(sess.graph, '.', './models/graph.pb', as_text=True)
 
 """ Can't get this method to work
   
