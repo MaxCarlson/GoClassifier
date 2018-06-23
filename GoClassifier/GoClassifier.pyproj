@@ -34,6 +34,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="GoClassifier.py" />
+    <Compile Include="MiscUtils.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Move.py">
       <SubType>Code</SubType>
     </Compile>
