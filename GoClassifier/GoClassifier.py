@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
+tf.reset_default_graph()
 #import tensorflow.contrib.eager as tfe
 
 import numpy as np
@@ -15,7 +16,7 @@ import matplotlib.pyplot as plt
 from DataGenerator import Generator
 from Globals import BoardLength, BoardSize, BoardDepth
 from CurateData import curateData
-from MiscUtils import saveModel, printModelPreds
+from MiscUtils import saveModel, printModelPreds, plotHistory
 
 # Uncomment this if you want to curate data from the 
 # Professional dataset https://github.com/yenw/computer-go-dataset#1-tygem-dataset
@@ -37,25 +38,6 @@ sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 #result = sess.run('Output/Softmax', feed_dict={'Input_input': test})
 #print(result)
 
-def plotHistory(history):
-    plt.subplot(1, 2, 1)
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    # summarize history for loss
-    plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-
-
 featurePath = 'data/features'
 labelPath = 'data/labels'
 
@@ -71,6 +53,66 @@ valGen = Generator(featurePath, labelPath, valFiles, batchSize)
 
 filters = 64
 batchMomentum = 0.99
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Convolution2D(filters, (5, 5), input_shape=(BoardDepth, BoardLength, BoardLength), name='Input'),
+    tf.keras.layers.ZeroPadding2D(padding =(4, 4),  name='Pad0'),
+    #tf.keras.layers.BatchNormalization(axis=1, momentum=batchMomentum, name='Norm0'), 
+    #tf.keras.layers.Dropout(0.25, name='Drop0'),
+    tf.keras.layers.Activation('relu', name='Relu0'),
+    tf.keras.layers.Flatten(name='Flatten0'),
+    tf.keras.layers.Dense(BoardSize, activation='softmax', name='Output'),
+])
+
+
+model.summary()
+
+# Debug: Look at models outputs prior to training
+# This is especially useful as the C++ model appears not
+# to be loading with weights yet, trying to find a fix
+printModelPreds(model)
+
+optimizer = tf.train.AdamOptimizer(learning_rate=0.0018)
+
+model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Exit training if validation accuracy 
+# starts declining
+earlyExit = keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0, patience=0)
+#checkpoints = keras.callbacks.ModelCheckpoint('./models/weights', monitor='val_loss', verbose=0, save_best_only=False)
+
+sess.run(tf.global_variables_initializer())
+i = 0
+for v in tf.global_variables():
+    print(v.name)
+    saver = tf.train.Saver([v])
+    saver.save(sess, save_path="models/preTrained/" + str(i))
+    i += 1
+
+# Train the model
+history = model.fit_generator(generator=gen.generator(),
+                    steps_per_epoch=gen.stepsPerEpoch(),
+                    validation_data=valGen.generator(),
+                    validation_steps=valGen.stepsPerEpoch(),
+                    epochs=numEpochs, 
+                    verbose=2, workers=1, callbacks=[earlyExit])
+
+sess.run(tf.global_variables_initializer())
+
+i = 0
+for v in tf.global_variables():
+    print(v.name)
+    saver = tf.train.Saver([v])
+    saver.save(sess, save_path="models/postTrained/" + str(i))
+    i += 1
+
+i = 0
+for v in tf.global_variables():
+    print(i, v.name)
+    i += 1
+
+#plotHistory(history)
+saveModel(sess, K, model)
 
 model = tf.keras.Sequential([
     tf.keras.layers.Convolution2D(filters, (5, 5), input_shape=(BoardDepth, BoardLength, BoardLength), data_format='channels_first', name='Input'),
@@ -111,31 +153,3 @@ model = tf.keras.Sequential([
     tf.keras.layers.Flatten(name='Flatten0'),
     tf.keras.layers.Dense(BoardSize, activation='softmax', name='Output'),
 ])
-
-model.summary()
-
-# Debug: Look at models outputs prior to training
-# This is especially useful as the C++ model appears not
-# to be loading with weights yet, trying to find a fix
-printModelPreds(model)
-
-optimizer = tf.train.AdamOptimizer(learning_rate=0.0018)
-
-model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
-
-# Exit training if validation accuracy 
-# starts declining
-earlyExit = keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0, patience=0)
-#checkpoints = keras.callbacks.ModelCheckpoint('./models/weights', monitor='val_loss', verbose=0, save_best_only=False)
-
-
-# Train the model
-history = model.fit_generator(generator=gen.generator(),
-                    steps_per_epoch=gen.stepsPerEpoch(),
-                    validation_data=valGen.generator(),
-                    validation_steps=valGen.stepsPerEpoch(),
-                    epochs=numEpochs, 
-                    verbose=2, workers=1, callbacks=[earlyExit])
-
-#plotHistory(history)
-saveModel(sess, model)

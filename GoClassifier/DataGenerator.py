@@ -132,6 +132,8 @@ class Generator():
 
             X, Y, roll = self.getNextChunk(XX, YY, m, roll)
 
+
+            #np.swapaxes(X, 0, 3)
             yield X, Y
 
             mi += 1
