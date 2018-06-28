@@ -22,11 +22,10 @@ def saveModel(sess, K, model):
     K.set_learning_phase(0)
     sess.run(tf.global_variables_initializer())
 
-    for v in tf.global_variables():
-        print(v.name)
-
-    saver = tf.train.Saver([v for v in tf.global_variables() if v.name == 'Output\kernel:0'])
-    saver.save(sess, save_path='test')
+    #for v in tf.global_variables():
+    #    print(v.name)
+    #saver = tf.train.Saver([v for v in tf.global_variables() if v.name == 'Output\kernel:0'])
+    #saver.save(sess, save_path='test')
 
     # Too bad we can't load from this format in C++, 
     # so far it hasn't worked. Maybe look more into it?
