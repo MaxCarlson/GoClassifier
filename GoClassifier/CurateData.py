@@ -56,8 +56,7 @@ class Storage:
         np.save(yname, self.yStorage)
         self.clear()
 
-# We store the board as black/white in memory
-# but we save it according to side to move perspective
+# We store and save the board as black/white
 def writeMoveAndBoardToFile(storage, move, board, col):
 
     storage.asignBoard(board, move)    
@@ -96,7 +95,11 @@ def processGame(line, storage):
 
         # Skip all moves in a game after passes 
         # ( Since passes aren't a move in the model yet )
+        # Pass seems to look like ...;W[];B[la]...
+        # Only 1 in 1000 games in this dataset though so 
+        # might need a differnet data set to train the network to pass reasonably well
         if mv[2] == ']':
+            print(line)
             break
 
         m = Move(mv)

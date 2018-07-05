@@ -14,7 +14,7 @@ from MiscUtils      import saveModel, printModelPreds, plotHistory
 
 # Uncomment this if you want to curate data from the 
 # Professional dataset https://github.com/yenw/computer-go-dataset#1-tygem-dataset
-#curateData()
+curateData()
 
 # Set it manually so C++ interface can use mem growth
 config = tf.ConfigProto()
@@ -32,7 +32,7 @@ numEpochs = 25
 
 # Use our generator to load data from files
 # that would be too large to fit into memory
-trainFiles = (1, 70)
+trainFiles = (1, 2)
 gen = Generator(featurePath, labelPath, trainFiles, batchSize)
 valFiles = (71, 72)
 valGen = Generator(featurePath, labelPath, valFiles, batchSize)
@@ -93,7 +93,7 @@ model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['ac
 
 # Exit training if validation accuracy 
 # starts declining
-earlyExit = keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0, patience=0)
+earlyExit = keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0, patience=15)
 #checkpoints = keras.callbacks.ModelCheckpoint('./models/weights', monitor='val_loss', verbose=0, save_best_only=False)
 
 # Train the model
@@ -104,10 +104,21 @@ history = model.fit_generator(generator=gen.generator(),
                     epochs=numEpochs, 
                     verbose=2, workers=1, callbacks=[earlyExit])
 
-sess.run(tf.global_variables_initializer())
 
-#plotHistory(history)
-saveModel(sess, K, model)
+# Was hoping to save in CNTK format using CNTK as backend with keras
+# Doesn't have seem to have worked.
+#import cntk as C
+#import keras.backend as K
+#model.save('./testModel')
+#m = keras.models.load_model('./testModel')
+#C.ops.functions.Function.save(model.output, 'cntkModel.dnn')
+#C.combine(model.output).save('cntkModel.dnn') 
+#cntkModel = C.load_model('cntkModel.dnn')
+
+#sess.run(tf.global_variables_initializer())
+
+plotHistory(history)
+#saveModel(sess, K, model)
 
 
 

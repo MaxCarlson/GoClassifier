@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib as plt
 from Globals import BoardDepth, BoardLength
 
 savePath = './models/'
