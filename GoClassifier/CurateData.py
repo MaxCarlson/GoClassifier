@@ -20,12 +20,12 @@ class Storage:
 
     def zeroBoard(self):
         self.storage = np.zeros((self.maxMovePerFile, self.SaveDepth, BoardLength, BoardLength), dtype=np.int8)
-        self.yStorage = np.zeros((self.maxMovePerFile, 2), dtype=int)
+        self.yStorage = np.zeros((self.maxMovePerFile, 3), dtype=int)
         return self.storage, self.yStorage
 
-    def asignBoard(self, board, move):
+    def asignBoard(self, board, move, won):
         self.storage[self.strgIdx] = board.combineStates(move.color)
-        self.yStorage[self.strgIdx] = [move.idx, move.color] 
+        self.yStorage[self.strgIdx] = [move.idx, move.color, won] 
         self.strgIdx += 1
 
     def nextFile(self):
@@ -57,9 +57,9 @@ class Storage:
         self.clear()
 
 # We store and save the board as black/white
-def writeMoveAndBoardToFile(storage, move, board, col):
+def writeMoveAndBoardToFile(storage, move, board, col, won):
 
-    storage.asignBoard(board, move)    
+    storage.asignBoard(board, move, won)    
     
     if storage.strgIdx >= storage.maxMovePerFile:
         storage.writeToFile()
@@ -78,6 +78,8 @@ def processGame(line, storage):
     semiCount = 0
     i = 0
 
+    won = 0
+
     # TODO: Igore handicap games!
     # Find the start of the game (Should later look at handicaps?)
     for ch in line:
@@ -86,6 +88,13 @@ def processGame(line, storage):
             semiCount += 1
         elif semiCount > 1:
             break
+
+        # Find who won the game
+        if line[i] == 'R' and line[i+1] == 'E':
+            if line[i+3] == 'B':
+                won = BLACK
+            elif line[i+3] == 'W':
+                won = WHITE
 
     # Process game into moves and boards
     col = BLACK
@@ -104,7 +113,7 @@ def processGame(line, storage):
 
         m = Move(mv)
 
-        writeMoveAndBoardToFile(storage, m, board, col)
+        writeMoveAndBoardToFile(storage, m, board, col, won)
         board.makeMove(m, col)
         col = flipCol(col)
         i += 6
