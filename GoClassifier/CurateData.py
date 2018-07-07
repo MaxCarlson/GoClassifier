@@ -78,7 +78,7 @@ def processGame(line, storage):
     semiCount = 0
     i = 0
 
-    won = 0
+    whoWon = 0
 
     # TODO: Igore handicap games!
     # Find the start of the game (Should later look at handicaps?)
@@ -92,9 +92,9 @@ def processGame(line, storage):
         # Find who won the game
         if line[i] == 'R' and line[i+1] == 'E':
             if line[i+3] == 'B':
-                won = BLACK
+                whoWon = BLACK
             elif line[i+3] == 'W':
-                won = WHITE
+                whoWon = WHITE
 
     # Process game into moves and boards
     col = BLACK
@@ -108,10 +108,14 @@ def processGame(line, storage):
         # Only 1 in 1000 games in this dataset though so 
         # might need a differnet data set to train the network to pass reasonably well
         if mv[2] == ']':
-            print(line)
+        #    print(line)
             break
 
         m = Move(mv)
+
+        # Determine whether the side
+        # to move won or lost
+        won = whoWon == col
 
         writeMoveAndBoardToFile(storage, m, board, col, won)
         board.makeMove(m, col)
